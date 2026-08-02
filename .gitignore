@@ -1,0 +1,15 @@
+# Large files
+*.xlsx
+xlsx_out/
+xlsx_extracted/
+dairy.zip
+
+# System
+~$*
+Thumbs.db
+.DS_Store
+
+# Temp scripts
+read_excel.js
+read_excel.ps1
+extract.ps1
