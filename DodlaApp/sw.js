@@ -1,10 +1,22 @@
-const CACHE = 'aarohi-v8';
+const CACHE = 'aarohi-v10';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
-  './app.js',
   './manifest.json',
+  './logo.png',
+  './data/products.json',
+  './js/storage.js',
+  './js/data.js',
+  './js/sheets-sync.js',
+  './js/pricing.js',
+  './js/inventory.js',
+  './js/wholesale.js',
+  './js/retail.js',
+  './js/scan.js',
+  './js/history.js',
+  './js/prices-page.js',
+  './js/app.js',
 ];
 
 self.addEventListener('install', e => {
