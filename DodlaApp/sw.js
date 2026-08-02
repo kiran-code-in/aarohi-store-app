@@ -1,4 +1,4 @@
-const CACHE = 'aarohi-v7';
+const CACHE = 'aarohi-v8';
 const ASSETS = [
   './',
   './index.html',

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Aarohi Enterprises</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
   <!-- ZXing barcode scanner library -->
   <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 </head>
@@ -62,11 +62,15 @@
         </div>
         <div class="summary-bar">
           <div class="summary-item">
-            <span class="summary-label">Today's Earnings</span>
-            <span class="summary-value green" id="totalAmountToday">₹0.00</span>
+            <span class="summary-label">Revenue</span>
+            <span class="summary-value green" id="totalRevenue">₹0.00</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Damaged Loss</span>
+            <span class="summary-label">Profit</span>
+            <span class="summary-value green" id="totalProfit">₹0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Damaged</span>
             <span class="summary-value red" id="totalDamagedLoss">₹0.00</span>
           </div>
         </div>
@@ -128,8 +132,9 @@
 
         <!-- Quick-add regular customers -->
         <div class="quick-add-section">
-          <div class="quick-add-label">Regular Customers — tap to add today</div>
-          <div class="quick-add-chips" id="quickAddChips"></div>
+          <input type="text" id="customerSearchInput" class="form-input customer-search"
+                 placeholder="🔍 Search customer name..." autocomplete="off" />
+          <div class="customer-list-scroll" id="customerListScroll"></div>
         </div>
 
         <button class="btn-add" id="addCustomerBtn">＋ Add New Customer</button>
@@ -183,6 +188,19 @@
       </div>
     </section>
 
+    <!-- PAGE: PRICES -->
+    <section class="page" id="page-prices">
+      <div class="section-card">
+        <div class="section-title">💰 Price Management</div>
+        <p class="hint-text">Update Buy, Retail (MRP), or Wholesale price. Changes are saved with date for reference.</p>
+        <div id="pricesBody" class="prices-body"></div>
+      </div>
+      <div class="section-card">
+        <div class="section-title">📋 Price Change History</div>
+        <div id="priceHistoryList" class="price-history-list"></div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ===== BOTTOM NAV ===== -->
@@ -206,6 +224,10 @@
     <button class="nav-btn" data-page="history">
       <span class="nav-icon">📅</span>
       <span class="nav-label">History</span>
+    </button>
+    <button class="nav-btn" data-page="prices">
+      <span class="nav-icon">💰</span>
+      <span class="nav-label">Prices</span>
     </button>
   </nav>
 
