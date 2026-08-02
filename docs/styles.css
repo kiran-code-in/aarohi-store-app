@@ -417,3 +417,153 @@ html, body {
 #stopScanBtn { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 8px 20px; }
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; opacity: 0.5; }
+
+
+/* ── SOLD STEPPER (additive +/- buttons) ── */
+.sold-cell { padding: 4px !important; }
+.sold-stepper {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+}
+.sold-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+}
+.sold-minus {
+  background: var(--red-light, #FFEBEE); color: var(--red, #D32F2F);
+}
+.sold-minus:active { background: var(--red, #D32F2F); color: #fff; }
+.sold-plus {
+  background: var(--green-light, #E8F5E9); color: var(--green, #2E7D32);
+}
+.sold-plus:active { background: var(--green, #2E7D32); color: #fff; }
+.sold-value {
+  min-width: 28px; text-align: center;
+  font-size: 15px; font-weight: 800; color: var(--text, #1E2A35);
+}
+
+/* ── PRICES PAGE ── */
+.prices-body { padding: 12px 16px; }
+
+.price-category-header {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; padding: 10px 0 6px;
+  color: var(--teal, #2A6B6B); border-bottom: 1px solid var(--border-light, #EDF0EB);
+  margin-top: 8px;
+}
+.price-category-header:first-child { margin-top: 0; }
+
+.price-row {
+  padding: 10px 0; border-bottom: 1px solid var(--border-light, #EDF0EB);
+}
+.price-product-name {
+  font-size: 14px; font-weight: 700; color: var(--text, #1E2A35);
+  margin-bottom: 8px;
+}
+.price-inputs {
+  display: flex; gap: 8px;
+}
+.price-field {
+  flex: 1; display: flex; flex-direction: column; gap: 3px;
+}
+.price-field label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--text-sec, #5A6B72);
+}
+.price-input {
+  width: 100%; padding: 8px 6px; text-align: center;
+  border: 1.5px solid var(--border, #D8DDD4); border-radius: 8px;
+  font-size: 14px; font-weight: 700; background: #fff;
+  color: var(--text, #1E2A35);
+}
+.price-input:focus {
+  outline: none; border-color: var(--teal, #2A6B6B);
+  box-shadow: 0 0 0 2px rgba(42,107,107,0.1);
+}
+
+/* ── PRICE HISTORY ── */
+.price-history-list { padding: 12px 16px; }
+.price-history-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--border-light, #EDF0EB);
+  font-size: 13px;
+}
+.ph-date { font-weight: 600; color: var(--text-sec, #5A6B72); min-width: 70px; }
+.ph-product { font-weight: 700; color: var(--text, #1E2A35); flex: 1; }
+.ph-change { font-weight: 600; color: var(--gold, #C8A84B); white-space: nowrap; }
+
+/* ── NAV with 6 items — slightly smaller ── */
+.bottom-nav .nav-btn { padding: 4px 1px; }
+.bottom-nav .nav-icon { font-size: 17px; }
+.bottom-nav .nav-label { font-size: 9px; }
+
+
+/* ── CUSTOMER SEARCH + LIST (replaces chips) ── */
+.quick-add-section {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--border, #D8DDD4);
+}
+.customer-search {
+  margin-bottom: 8px;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+}
+.customer-list-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #D8DDD4);
+  border-radius: 10px;
+  background: #fff;
+}
+.cl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-light, #EDF0EB);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.cl-row:last-child { border-bottom: none; }
+.cl-row:active { background: var(--teal-pale, #E6F3F3); }
+.cl-row.cl-added {
+  background: var(--green-light, #E8F5E9);
+  cursor: default;
+}
+.cl-row.cl-added:active { background: var(--green-light, #E8F5E9); }
+.cl-name { font-size: 14px; font-weight: 600; color: var(--text, #1E2A35); }
+.cl-status {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-sec, #5A6B72);
+}
+.cl-added .cl-status { color: var(--green, #2E7D32); }
+.cl-empty {
+  padding: 16px; text-align: center;
+  font-size: 13px; color: var(--text-sec, #5A6B72);
+}
+
+
+/* ── WHOLESALE CATEGORY GROUPS ── */
+.ws-cat-group { border-bottom: 1px solid var(--border-light, #EDF0EB); }
+.ws-cat-group:last-child { border-bottom: none; }
+.ws-cat-header {
+  padding: 9px 0; font-size: 12px; font-weight: 700;
+  color: var(--teal, #2A6B6B); cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  user-select: none;
+}
+.ws-cat-header::before {
+  content: '▸ '; font-size: 10px;
+}
+.ws-cat-body { display: none; padding-bottom: 6px; }
+.ws-cat-body.open { display: block; }
+.ws-cat-body.open + .ws-cat-header::before,
+.ws-cat-group:has(.ws-cat-body.open) .ws-cat-header::before {
+  content: '▾ ';
+}
+
+
+/* ── CUSTOMER TOGGLE (collapse/expand) ── */
+.customer-toggle {
+  background: none; border: none; font-size: 16px;
+  color: var(--text-sec, #5A6B72); cursor: pointer; padding: 2px 8px;
+}

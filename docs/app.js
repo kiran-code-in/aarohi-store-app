@@ -2,43 +2,108 @@
 
 // ═══════════════════════════════════════════════════════════════
 //  PRODUCT CATALOG — organized by category
+//  Default prices: buyPrice (cost from supplier), retailPrice (MRP),
+//  wholesalePrice (bulk rate). These are defaults — actual prices
+//  come from getPrices() which reads localStorage overrides.
 // ═══════════════════════════════════════════════════════════════
 const PRODUCTS = [
-  // ── Milk Products ──
-  { id: 'FCM',       name: 'FCM (Full Cream)', category: 'Milk', price: 38,   barcodes: ['FCM','FCM1'] },
-  { id: 'STD',       name: 'STD (Standard)',   category: 'Milk', price: 33,   barcodes: ['STD','STD1'] },
-  { id: 'MILK200',   name: 'Milk 200ml',       category: 'Milk', price: 9.5,  barcodes: ['MILK200','M200'] },
-  { id: 'CURD500',   name: 'Curd 500ml',       category: 'Milk', price: 34,   barcodes: ['CURD500','C500'] },
-  { id: 'CURD200',   name: 'Curd 200ml',       category: 'Milk', price: 9.5,  barcodes: ['CURD200','C200'] },
-  { id: 'CURD10L',   name: 'Curd 10L',         category: 'Milk', price: 630,  barcodes: ['CURD10L','C10L'] },
-  { id: 'CURD5L',    name: 'Curd 5L',          category: 'Milk', price: 320,  barcodes: ['CURD5L','C5L'] },
-  { id: 'LUSSI',     name: 'Lussi',            category: 'Milk', price: 9.5,  barcodes: ['LUSSI'] },
-  { id: 'BUTTERMILK',name: 'Butter Milk',      category: 'Milk', price: 8.5,  barcodes: ['BM','BM1','BUTTERMILK'] },
+  // ── Milk Products ──                         buy   retail  wholesale
+  { id: 'FCM',       name: 'FCM (Full Cream)', category: 'Milk', buyPrice: 35,  retailPrice: 38,  wholesalePrice: 36,  barcodes: ['FCM','FCM1'] },
+  { id: 'STD',       name: 'STD (Standard)',   category: 'Milk', buyPrice: 30,  retailPrice: 33,  wholesalePrice: 31,  barcodes: ['STD','STD1'] },
+  { id: 'MILK200',   name: 'Milk 200ml',       category: 'Milk', buyPrice: 8,   retailPrice: 9.5, wholesalePrice: 9,   barcodes: ['MILK200','M200'] },
+  { id: 'CURD500',   name: 'Curd 500ml',       category: 'Milk', buyPrice: 30,  retailPrice: 34,  wholesalePrice: 32,  barcodes: ['CURD500','C500'] },
+  { id: 'CURD200',   name: 'Curd 200ml',       category: 'Milk', buyPrice: 8,   retailPrice: 9.5, wholesalePrice: 9,   barcodes: ['CURD200','C200'] },
+  { id: 'CURD10L',   name: 'Curd 10L',         category: 'Milk', buyPrice: 580, retailPrice: 630, wholesalePrice: 600, barcodes: ['CURD10L','C10L'] },
+  { id: 'CURD5L',    name: 'Curd 5L',          category: 'Milk', buyPrice: 290, retailPrice: 320, wholesalePrice: 305, barcodes: ['CURD5L','C5L'] },
+  { id: 'LUSSI',     name: 'Lussi',            category: 'Milk', buyPrice: 8,   retailPrice: 9.5, wholesalePrice: 9,   barcodes: ['LUSSI'] },
+  { id: 'BUTTERMILK',name: 'Butter Milk',      category: 'Milk', buyPrice: 7,   retailPrice: 8.5, wholesalePrice: 8,   barcodes: ['BM','BM1','BUTTERMILK'] },
 
   // ── Ice Cream ──
-  { id: 'IC_CONE',   name: 'Cone',             category: 'Ice Cream', price: 20,  barcodes: ['CONE'] },
-  { id: 'IC_CUP',    name: 'Cup',              category: 'Ice Cream', price: 30,  barcodes: ['ICCUP'] },
-  { id: 'IC_FAMILY', name: 'Family Pack',      category: 'Ice Cream', price: 120, barcodes: ['ICFAM'] },
-  { id: 'IC_CANDY',  name: 'Candy/Bar',        category: 'Ice Cream', price: 15,  barcodes: ['ICBAR'] },
-  { id: 'IC_CHOCOBAR',name:'Chocobar',         category: 'Ice Cream', price: 25,  barcodes: ['CHOCO'] },
+  { id: 'IC_CONE',   name: 'Cone',             category: 'Ice Cream', buyPrice: 16, retailPrice: 20,  wholesalePrice: 18,  barcodes: ['CONE'] },
+  { id: 'IC_CUP',    name: 'Cup',              category: 'Ice Cream', buyPrice: 24, retailPrice: 30,  wholesalePrice: 27,  barcodes: ['ICCUP'] },
+  { id: 'IC_FAMILY', name: 'Family Pack',      category: 'Ice Cream', buyPrice: 95, retailPrice: 120, wholesalePrice: 110, barcodes: ['ICFAM'] },
+  { id: 'IC_CANDY',  name: 'Candy/Bar',        category: 'Ice Cream', buyPrice: 12, retailPrice: 15,  wholesalePrice: 13,  barcodes: ['ICBAR'] },
+  { id: 'IC_CHOCOBAR',name:'Chocobar',         category: 'Ice Cream', buyPrice: 20, retailPrice: 25,  wholesalePrice: 22,  barcodes: ['CHOCO'] },
 
   // ── Soft Drinks ──
-  { id: 'SD_SMALL',  name: 'Soft Drink 250ml', category: 'Soft Drinks', price: 20,  barcodes: ['SD250'] },
-  { id: 'SD_MED',    name: 'Soft Drink 500ml', category: 'Soft Drinks', price: 40,  barcodes: ['SD500'] },
-  { id: 'SD_LARGE',  name: 'Soft Drink 1L',    category: 'Soft Drinks', price: 70,  barcodes: ['SD1L'] },
-  { id: 'SD_WATER',  name: 'Water Bottle',     category: 'Soft Drinks', price: 20,  barcodes: ['WATER'] },
-  { id: 'SD_JUICE',  name: 'Juice',            category: 'Soft Drinks', price: 30,  barcodes: ['JUICE'] },
+  { id: 'SD_SMALL',  name: 'Soft Drink 250ml', category: 'Soft Drinks', buyPrice: 16, retailPrice: 20, wholesalePrice: 18, barcodes: ['SD250'] },
+  { id: 'SD_MED',    name: 'Soft Drink 500ml', category: 'Soft Drinks', buyPrice: 32, retailPrice: 40, wholesalePrice: 36, barcodes: ['SD500'] },
+  { id: 'SD_LARGE',  name: 'Soft Drink 1L',    category: 'Soft Drinks', buyPrice: 56, retailPrice: 70, wholesalePrice: 63, barcodes: ['SD1L'] },
+  { id: 'SD_WATER',  name: 'Water Bottle',     category: 'Soft Drinks', buyPrice: 14, retailPrice: 20, wholesalePrice: 17, barcodes: ['WATER'] },
+  { id: 'SD_JUICE',  name: 'Juice',            category: 'Soft Drinks', buyPrice: 24, retailPrice: 30, wholesalePrice: 27, barcodes: ['JUICE'] },
 
   // ── Ready to Cook ──
-  { id: 'RC_CHAPATHI',name:'Chapathi',         category: 'Ready to Cook', price: 40,  barcodes: ['CHAP'] },
-  { id: 'RC_POORI',   name:'Poori',            category: 'Ready to Cook', price: 40,  barcodes: ['POORI'] },
-  { id: 'RC_PAROTA',  name:'Parota',           category: 'Ready to Cook', price: 45,  barcodes: ['PAROTA'] },
-  { id: 'RC_IDLY',    name:'Idly Batter',      category: 'Ready to Cook', price: 60,  barcodes: ['IDLY'] },
-  { id: 'RC_DOSA',    name:'Dosa Batter',      category: 'Ready to Cook', price: 60,  barcodes: ['DOSA'] },
+  { id: 'RC_CHAPATHI',name:'Chapathi',         category: 'Ready to Cook', buyPrice: 32, retailPrice: 40, wholesalePrice: 36, barcodes: ['CHAP'] },
+  { id: 'RC_POORI',   name:'Poori',            category: 'Ready to Cook', buyPrice: 32, retailPrice: 40, wholesalePrice: 36, barcodes: ['POORI'] },
+  { id: 'RC_PAROTA',  name:'Parota',           category: 'Ready to Cook', buyPrice: 36, retailPrice: 45, wholesalePrice: 40, barcodes: ['PAROTA'] },
+  { id: 'RC_IDLY',    name:'Idly Batter',      category: 'Ready to Cook', buyPrice: 48, retailPrice: 60, wholesalePrice: 54, barcodes: ['IDLY'] },
+  { id: 'RC_DOSA',    name:'Dosa Batter',      category: 'Ready to Cook', buyPrice: 48, retailPrice: 60, wholesalePrice: 54, barcodes: ['DOSA'] },
 ];
 
 // Category list (derived)
 const CATEGORIES = [...new Set(PRODUCTS.map(p => p.category))];
+
+// ═══════════════════════════════════════════════════════════════
+//  PRICING SYSTEM — stored in localStorage, updatable by user
+//  Price history tracks every change with date
+// ═══════════════════════════════════════════════════════════════
+const PRICES_KEY = 'aarohi_prices';
+const PRICE_HISTORY_KEY = 'aarohi_price_history';
+
+function loadPrices() {
+  const raw = localStorage.getItem(PRICES_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function savePrices(prices) {
+  localStorage.setItem(PRICES_KEY, JSON.stringify(prices));
+}
+
+function loadPriceHistory() {
+  const raw = localStorage.getItem(PRICE_HISTORY_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+function savePriceHistory(history) {
+  localStorage.setItem(PRICE_HISTORY_KEY, JSON.stringify(history));
+}
+
+// Get current effective prices for a product (user overrides or defaults)
+function getPrices(productId) {
+  const stored = loadPrices();
+  if (stored && stored[productId]) {
+    return stored[productId];
+  }
+  const p = PRODUCTS.find(x => x.id === productId);
+  return { buyPrice: p.buyPrice, retailPrice: p.retailPrice, wholesalePrice: p.wholesalePrice };
+}
+
+// Update a product's price and record history
+function updatePrice(productId, field, newValue) {
+  const prices = loadPrices() || {};
+  const current = getPrices(productId);
+  const oldValue = current[field];
+
+  if (!prices[productId]) {
+    prices[productId] = { ...current };
+  }
+  prices[productId][field] = newValue;
+  savePrices(prices);
+
+  // Record history
+  const history = loadPriceHistory();
+  history.unshift({
+    productId,
+    field,
+    oldValue,
+    newValue,
+    date: todayKey(),
+    timestamp: Date.now(),
+  });
+  // Keep last 200 entries
+  if (history.length > 200) history.length = 200;
+  savePriceHistory(history);
+}
 
 const REGULAR_CUSTOMERS = [
   // From the actual daily sheets in Dodla Dairy Products.xlsx
@@ -107,6 +172,7 @@ function emptyDay(dateKey) {
       soldToday: 0,
       totalAvailable: yRemaining,   // will recalc
       damaged: 0,
+      manualSold: 0,
     };
   });
   return {
@@ -126,9 +192,9 @@ function getDay(dateKey) {
   return loadDay(dateKey) || emptyDay(dateKey);
 }
 
-function saveDay(day) {
+function saveDay(day, silent) {
   localStorage.setItem(storageKey(day.dateKey), JSON.stringify(day));
-  showToast('Saved');
+  if (!silent) showToast('Saved');
 }
 
 function recalcInventory(day) {
@@ -185,28 +251,44 @@ function renderInventory() {
   const tbody = document.getElementById('inventoryBody');
   tbody.innerHTML = '';
 
-  let totalAmt = 0;
+  let totalRevenue = 0;
+  let totalCost = 0;
   let damagedAmt = 0;
 
   // Show only products for the selected category
   const filtered = PRODUCTS.filter(p => p.category === activeCategory);
 
   filtered.forEach(p => {
+    const prices = getPrices(p.id);
     const inv = day.inventory[p.id] || { received: 0, yesterdayRemaining: 0, soldToday: 0, totalAvailable: 0, damaged: 0 };
-    const amt = inv.soldToday * p.price;
-    totalAmt += amt;
-    damagedAmt += inv.damaged * p.price;
+
+    // Revenue = wholesale sold at wholesale price + retail sold at retail price
+    // For inventory view, use a blended approach: just show total sold × retail for revenue display
+    // Actual profit is calculated from wholesale/retail split in summary
+    const wsSold = getWholesaleSoldForProduct(day, p.id);
+    const retailSold = (day.retail[p.id] || 0);
+    const revenue = (wsSold * prices.wholesalePrice) + (retailSold * prices.retailPrice);
+    const cost = inv.soldToday * prices.buyPrice;
+    totalRevenue += revenue;
+    totalCost += cost;
+    damagedAmt += inv.damaged * prices.buyPrice;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="col-product">${p.name}<span class="product-price">₹${p.price}</span></td>
+      <td class="col-product">${p.name}<span class="product-price">Buy ₹${prices.buyPrice} · Sell ₹${prices.retailPrice}</span></td>
       <td class="col-num">
         <input class="inv-input" type="number" min="0" inputmode="numeric"
                data-id="${p.id}" data-field="received"
                value="${inv.received}" />
       </td>
       <td class="col-num total-cell">${inv.yesterdayRemaining}</td>
-      <td class="col-num total-cell">${inv.soldToday}</td>
+      <td class="col-num sold-cell">
+        <div class="sold-stepper">
+          <button class="sold-btn sold-minus" data-id="${p.id}">−</button>
+          <span class="sold-value">${inv.soldToday}</span>
+          <button class="sold-btn sold-plus" data-id="${p.id}">+</button>
+        </div>
+      </td>
       <td class="col-num total-cell">${inv.totalAvailable}</td>
       <td class="col-num">
         <input class="inv-input damaged-cell" type="number" min="0" inputmode="numeric"
@@ -220,34 +302,70 @@ function renderInventory() {
   // Total across ALL categories (full day)
   PRODUCTS.forEach(p => {
     if (p.category !== activeCategory) {
+      const prices = getPrices(p.id);
       const inv = day.inventory[p.id] || {};
-      totalAmt += (inv.soldToday || 0) * p.price;
-      damagedAmt += (inv.damaged || 0) * p.price;
+      const wsSold = getWholesaleSoldForProduct(day, p.id);
+      const retailSold = (day.retail[p.id] || 0);
+      totalRevenue += (wsSold * prices.wholesalePrice) + (retailSold * prices.retailPrice);
+      totalCost += (inv.soldToday || 0) * prices.buyPrice;
+      damagedAmt += (inv.damaged || 0) * prices.buyPrice;
     }
   });
 
-  document.getElementById('totalAmountToday').textContent = fmt(totalAmt);
+  const profit = totalRevenue - totalCost;
+  document.getElementById('totalRevenue').textContent = fmt(totalRevenue);
+  document.getElementById('totalProfit').textContent = fmt(profit);
   document.getElementById('totalDamagedLoss').textContent = fmt(damagedAmt);
 
-  // attach input listeners
+  // attach input listeners for received/damaged
   tbody.querySelectorAll('.inv-input').forEach(inp => {
-    inp.addEventListener('change', onInventoryChange);
+    inp.addEventListener('input', onInventoryChange);
+  });
+
+  // attach sold +/- listeners
+  tbody.querySelectorAll('.sold-plus').forEach(btn => {
+    btn.addEventListener('click', () => onSoldChange(btn.dataset.id, +1));
+  });
+  tbody.querySelectorAll('.sold-minus').forEach(btn => {
+    btn.addEventListener('click', () => onSoldChange(btn.dataset.id, -1));
   });
 }
 
+// Helper: get total wholesale sold for a specific product across all customers
+function getWholesaleSoldForProduct(day, productId) {
+  let total = 0;
+  (day.wholesale || []).forEach(c => { total += (c.products[productId] || 0); });
+  return total;
+}
+
+// Handle +/- on sold column (additive — tracks manual sold separately)
+function onSoldChange(productId, delta) {
+  const day = getDay(currentDate);
+  if (!day.inventory[productId]) day.inventory[productId] = { received: 0, yesterdayRemaining: 0, soldToday: 0, totalAvailable: 0, damaged: 0, manualSold: 0 };
+  if (!day.inventory[productId].manualSold) day.inventory[productId].manualSold = 0;
+  day.inventory[productId].manualSold = Math.max(0, day.inventory[productId].manualSold + delta);
+  // Recalc total sold = wholesale + retail + manual
+  syncWholesaleToInventory(day);
+  saveDay(day);
+  renderInventory();
+}
+
+let _invRenderTimer = null;
 function onInventoryChange(e) {
   const inp = e.target;
   const id = inp.dataset.id;
   const field = inp.dataset.field;
   const val = Math.max(0, parseInt(inp.value) || 0);
-  inp.value = val;
 
   const day = getDay(currentDate);
-  if (!day.inventory[id]) day.inventory[id] = { received: 0, yesterdayRemaining: 0, soldToday: 0, totalAvailable: 0, damaged: 0 };
+  if (!day.inventory[id]) day.inventory[id] = { received: 0, yesterdayRemaining: 0, soldToday: 0, totalAvailable: 0, damaged: 0, manualSold: 0 };
   day.inventory[id][field] = val;
   recalcInventory(day);
-  saveDay(day);
-  renderInventory();
+  saveDay(day, true);
+
+  // Debounce the re-render so typing isn't interrupted
+  clearTimeout(_invRenderTimer);
+  _invRenderTimer = setTimeout(() => renderInventory(), 600);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -266,18 +384,29 @@ function renderWholesale() {
       <div class="customer-header" data-idx="${idx}">
         <span class="customer-name">${cust.name}</span>
         <span class="customer-subtotal">₹${subtotal.toFixed(2)}</span>
-        <button class="customer-del" data-del="${idx}" title="Remove">🗑</button>
+        <button class="customer-toggle" data-idx="${idx}" title="Collapse/Expand">▾</button>
       </div>
       <div class="customer-body" id="custBody_${idx}">
-        ${PRODUCTS.map(p => {
-          const qty = cust.products[p.id] || 0;
+        ${CATEGORIES.map(cat => {
+          const catProducts = PRODUCTS.filter(p => p.category === cat);
+          const hasQty = catProducts.some(p => (cust.products[p.id] || 0) > 0);
           return `
-            <div class="ws-product-row">
-              <span class="ws-product-label">${p.name}</span>
-              <span class="ws-product-price">₹${p.price}</span>
-              <input class="ws-qty-input" type="number" min="0"
-                     data-custidx="${idx}" data-pid="${p.id}"
-                     value="${qty}" placeholder="0" />
+            <div class="ws-cat-group">
+              <div class="ws-cat-header" data-cat="${cat}" data-idx="${idx}">${cat}</div>
+              <div class="ws-cat-body${hasQty ? ' open' : ''}" id="wsCat_${idx}_${cat.replace(/\s/g,'')}">
+                ${catProducts.map(p => {
+                  const qty = cust.products[p.id] || 0;
+                  const prices = getPrices(p.id);
+                  return `
+                    <div class="ws-product-row">
+                      <span class="ws-product-label">${p.name}</span>
+                      <span class="ws-product-price">₹${prices.wholesalePrice}</span>
+                      <input class="ws-qty-input" type="number" min="0"
+                             data-custidx="${idx}" data-pid="${p.id}"
+                             value="${qty}" placeholder="0" />
+                    </div>`;
+                }).join('')}
+              </div>
             </div>`;
         }).join('')}
       </div>
@@ -285,31 +414,33 @@ function renderWholesale() {
     list.appendChild(card);
   });
 
-  // toggle expand
+  // toggle expand/collapse
   list.querySelectorAll('.customer-header').forEach(h => {
-    h.addEventListener('click', (e) => {
-      if (e.target.dataset.del !== undefined) return;
+    h.addEventListener('click', () => {
       const idx = h.dataset.idx;
       const body = document.getElementById(`custBody_${idx}`);
       body.classList.toggle('open');
+      // Update arrow
+      const toggle = h.querySelector('.customer-toggle');
+      if (toggle) toggle.textContent = body.classList.contains('open') ? '▾' : '▸';
     });
   });
 
-  // delete customer
-  list.querySelectorAll('.customer-del').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.del);
-      const day = getDay(currentDate);
-      day.wholesale.splice(idx, 1);
-      saveDay(day);
-      renderWholesale();
-    });
+  // input changes — use event delegation on the list container
+  list.addEventListener('input', (e) => {
+    if (e.target.classList.contains('ws-qty-input')) {
+      onWholesaleChange(e);
+    }
   });
 
-  // input changes
-  list.querySelectorAll('.ws-qty-input').forEach(inp => {
-    inp.addEventListener('change', onWholesaleChange);
+  // category group toggle inside customer cards
+  list.querySelectorAll('.ws-cat-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const cat = h.dataset.cat;
+      const idx = h.dataset.idx;
+      const body = document.getElementById(`wsCat_${idx}_${cat.replace(/\s/g,'')}`);
+      if (body) body.classList.toggle('open');
+    });
   });
 
   renderWholesaleTotals(day);
@@ -318,35 +449,49 @@ function renderWholesale() {
 
 function calcCustomerTotal(cust) {
   let t = 0;
-  PRODUCTS.forEach(p => { t += (cust.products[p.id] || 0) * p.price; });
+  PRODUCTS.forEach(p => {
+    const prices = getPrices(p.id);
+    t += (cust.products[p.id] || 0) * prices.wholesalePrice;
+  });
   return t;
 }
 
+let _wsRenderTimer = null;
 function onWholesaleChange(e) {
   const inp = e.target;
   const idx = parseInt(inp.dataset.custidx);
   const pid = inp.dataset.pid;
   const val = Math.max(0, parseInt(inp.value) || 0);
-  inp.value = val;
 
   const day = getDay(currentDate);
+  if (!day.wholesale[idx]) return; // safety check
   if (!day.wholesale[idx].products) day.wholesale[idx].products = {};
   day.wholesale[idx].products[pid] = val;
 
   // sync wholesale sold into inventory
   syncWholesaleToInventory(day);
-  saveDay(day);
-  renderWholesale();
-  renderInventory();
+  saveDay(day, true);
+
+  // Update subtotal display without full re-render (avoids collapse)
+  const headerEl = document.querySelector(`.customer-header[data-idx="${idx}"] .customer-subtotal`);
+  if (headerEl) {
+    headerEl.textContent = '₹' + calcCustomerTotal(day.wholesale[idx]).toFixed(2);
+  }
+
+  clearTimeout(_wsRenderTimer);
+  _wsRenderTimer = setTimeout(() => { renderWholesaleTotals(day); renderInventory(); }, 500);
 }
 
 function syncWholesaleToInventory(day) {
-  // reset sold from wholesale
+  // Wholesale + retail contribute to soldToday, but don't reset manual +/- additions
+  // soldToday = wholesale total + retail total + manual adjustments
+  // We store manual adjustments separately
   PRODUCTS.forEach(p => {
     let wsSold = 0;
     day.wholesale.forEach(c => { wsSold += c.products[p.id] || 0; });
     const retailQty = day.retail[p.id] || 0;
-    day.inventory[p.id].soldToday = wsSold + retailQty;
+    const manualSold = day.inventory[p.id]?.manualSold || 0;
+    day.inventory[p.id].soldToday = wsSold + retailQty + manualSold;
   });
   recalcInventory(day);
 }
@@ -384,14 +529,15 @@ function renderRetail() {
   let totalAmt = 0;
 
   PRODUCTS.forEach(p => {
+    const prices = getPrices(p.id);
     const qty = day.retail[p.id] || 0;
-    const amt = qty * p.price;
+    const amt = qty * prices.retailPrice;
     totalQty += qty;
     totalAmt += amt;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="col-product">${p.name}<br><small style="color:#999">₹${p.price}/unit</small></td>
+      <td class="col-product">${p.name}<br><small style="color:var(--text-sec)">₹${prices.retailPrice}/unit</small></td>
       <td class="col-num">
         <input class="inv-input" type="number" min="0"
                data-id="${p.id}"
@@ -406,23 +552,24 @@ function renderRetail() {
   document.getElementById('retailTotalAmt').textContent = fmt(totalAmt);
 
   tbody.querySelectorAll('.inv-input').forEach(inp => {
-    inp.addEventListener('change', onRetailChange);
+    inp.addEventListener('input', onRetailChange);
   });
 }
 
+let _retailRenderTimer = null;
 function onRetailChange(e) {
   const inp = e.target;
   const id = inp.dataset.id;
   const val = Math.max(0, parseInt(inp.value) || 0);
-  inp.value = val;
 
   const day = getDay(currentDate);
   if (!day.retail) day.retail = {};
   day.retail[id] = val;
   syncWholesaleToInventory(day);
-  saveDay(day);
-  renderRetail();
-  renderInventory();
+  saveDay(day, true);
+
+  clearTimeout(_retailRenderTimer);
+  _retailRenderTimer = setTimeout(() => { renderRetail(); renderInventory(); }, 600);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -449,7 +596,10 @@ function renderHistory() {
     const day = loadDay(dateKey);
     if (!day) return;
     let totalAmt = 0;
-    PRODUCTS.forEach(p => { totalAmt += (day.inventory[p.id]?.soldToday || 0) * p.price; });
+    PRODUCTS.forEach(p => {
+      const prices = getPrices(p.id);
+      totalAmt += (day.inventory[p.id]?.soldToday || 0) * prices.retailPrice;
+    });
 
     const div = document.createElement('div');
     div.className = 'history-day';
@@ -464,7 +614,7 @@ function renderHistory() {
           return `<div class="history-row">
             <span>${p.name}</span>
             <span>Recd: ${inv.received || 0} | Sold: ${inv.soldToday || 0} | Dmg: ${inv.damaged || 0}</span>
-            <span style="color:var(--green)">₹${((inv.soldToday || 0) * p.price).toFixed(2)}</span>
+            <span style="color:var(--green)">₹${((inv.soldToday || 0) * getPrices(p.id).retailPrice).toFixed(2)}</span>
           </div>`;
         }).join('')}
         <div class="history-row" style="margin-top:6px;font-weight:700">
@@ -497,7 +647,8 @@ function initScanPage() {
       PRODUCTS.filter(p => p.category === cat).forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = `${p.name}  (₹${p.price})`;
+        const prices = getPrices(p.id);
+        opt.textContent = `${p.name}  (₹${prices.retailPrice})`;
         grp.appendChild(opt);
       });
       select.appendChild(grp);
@@ -506,35 +657,50 @@ function initScanPage() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  QUICK-ADD CHIPS  (regular customer chips on wholesale page)
+//  CUSTOMER SEARCH + SELECT LIST (replaces chips for scalability)
 // ═══════════════════════════════════════════════════════════════
 function renderQuickAddChips() {
+  renderCustomerList('');
+  const searchInput = document.getElementById('customerSearchInput');
+  // Remove old listener by replacing node
+  const newInput = searchInput.cloneNode(true);
+  searchInput.parentNode.replaceChild(newInput, searchInput);
+  newInput.addEventListener('input', (e) => {
+    renderCustomerList(e.target.value.trim().toLowerCase());
+  });
+}
+
+function renderCustomerList(filter) {
   const day = getDay(currentDate);
-  const container = document.getElementById('quickAddChips');
+  const container = document.getElementById('customerListScroll');
   container.innerHTML = '';
 
-  REGULAR_CUSTOMERS.forEach(name => {
+  const filtered = REGULAR_CUSTOMERS.filter(name =>
+    !filter || name.toLowerCase().includes(filter)
+  );
+
+  if (filtered.length === 0 && filter) {
+    container.innerHTML = `<div class="cl-empty">No match. Use "＋ Add New" below.</div>`;
+    return;
+  }
+
+  filtered.forEach(name => {
     const alreadyAdded = day.wholesale.some(
       c => c.name.toLowerCase() === name.toLowerCase()
     );
-    const chip = document.createElement('button');
-    chip.className = 'quick-chip' + (alreadyAdded ? ' added' : '');
-    chip.textContent = alreadyAdded ? `✓ ${name}` : name;
-    chip.addEventListener('click', () => {
-      if (alreadyAdded) {
-        // Remove this customer
-        const day = getDay(currentDate);
-        const idx = day.wholesale.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
-        if (idx >= 0) {
-          day.wholesale.splice(idx, 1);
-          saveDay(day);
-          renderWholesale();
-        }
-      } else {
+    const row = document.createElement('div');
+    row.className = 'cl-row' + (alreadyAdded ? ' cl-added' : '');
+    row.innerHTML = `
+      <span class="cl-name">${name}</span>
+      <span class="cl-status">${alreadyAdded ? '✓ Added' : 'Tap to add'}</span>
+    `;
+    if (!alreadyAdded) {
+      row.addEventListener('click', () => {
         addCustomerByName(name);
-      }
-    });
-    container.appendChild(chip);
+        renderCustomerList(document.getElementById('customerSearchInput').value.trim().toLowerCase());
+      });
+    }
+    container.appendChild(row);
   });
 }
 
@@ -642,6 +808,7 @@ function navigateTo(pageId) {
   if (pageId === 'wholesale') { renderWholesale(); renderQuickAddChips(); }
   if (pageId === 'retail')    renderRetail();
   if (pageId === 'history')   renderHistory();
+  if (pageId === 'prices')    renderPrices();
 
   if (pageId !== 'scan') stopCameraScan();
 }
@@ -655,12 +822,24 @@ function addCustomerByName(name) {
     showToast(`${name} already added`);
     return;
   }
-  day.wholesale.push({ name, products: {} });
-  saveDay(day);
+  // Add new customer at the TOP of the list so they appear first
+  day.wholesale.unshift({ name, products: {} });
+  saveDay(day, true);
+
   renderWholesale();
-  // auto-expand ALL customer cards so nothing is hidden
+
+  // Collapse all cards, then expand only the new one (first card)
   setTimeout(() => {
-    document.querySelectorAll('.customer-body').forEach(b => b.classList.add('open'));
+    document.querySelectorAll('.customer-body').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('.customer-toggle').forEach(t => t.textContent = '▸');
+    const newBody = document.getElementById('custBody_0');
+    if (newBody) {
+      newBody.classList.add('open');
+      const toggle = document.querySelector('.customer-header[data-idx="0"] .customer-toggle');
+      if (toggle) toggle.textContent = '▾';
+      // Scroll to top of customer list
+      newBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }, 50);
 }
 
@@ -679,6 +858,91 @@ function confirmAddCustomer() {
   if (!name) return;
   addCustomerByName(name);
   closeAddCustomerModal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER PRICES PAGE
+// ═══════════════════════════════════════════════════════════════
+function renderPrices() {
+  const container = document.getElementById('pricesBody');
+  container.innerHTML = '';
+
+  let currentCat = '';
+  PRODUCTS.forEach(p => {
+    if (p.category !== currentCat) {
+      currentCat = p.category;
+      const catDiv = document.createElement('div');
+      catDiv.className = 'price-category-header';
+      catDiv.textContent = currentCat;
+      container.appendChild(catDiv);
+    }
+
+    const prices = getPrices(p.id);
+    const row = document.createElement('div');
+    row.className = 'price-row';
+    row.innerHTML = `
+      <div class="price-product-name">${p.name}</div>
+      <div class="price-inputs">
+        <div class="price-field">
+          <label>Buy</label>
+          <input type="number" class="price-input" data-id="${p.id}" data-field="buyPrice"
+                 value="${prices.buyPrice}" inputmode="decimal" step="0.5" />
+        </div>
+        <div class="price-field">
+          <label>Retail</label>
+          <input type="number" class="price-input" data-id="${p.id}" data-field="retailPrice"
+                 value="${prices.retailPrice}" inputmode="decimal" step="0.5" />
+        </div>
+        <div class="price-field">
+          <label>Wholesale</label>
+          <input type="number" class="price-input" data-id="${p.id}" data-field="wholesalePrice"
+                 value="${prices.wholesalePrice}" inputmode="decimal" step="0.5" />
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  // Attach change listeners
+  container.querySelectorAll('.price-input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const id = e.target.dataset.id;
+      const field = e.target.dataset.field;
+      const val = parseFloat(e.target.value) || 0;
+      e.target.value = val;
+      updatePrice(id, field, val);
+      showToast('Price updated');
+    });
+  });
+
+  // Render history
+  renderPriceHistory();
+}
+
+function renderPriceHistory() {
+  const list = document.getElementById('priceHistoryList');
+  list.innerHTML = '';
+  const history = loadPriceHistory();
+
+  if (history.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text-sec);padding:20px">No price changes yet.</p>';
+    return;
+  }
+
+  // Show last 30
+  const recent = history.slice(0, 30);
+  recent.forEach(entry => {
+    const p = PRODUCTS.find(x => x.id === entry.productId);
+    const fieldLabel = entry.field === 'buyPrice' ? 'Buy' : entry.field === 'retailPrice' ? 'Retail' : 'Wholesale';
+    const div = document.createElement('div');
+    div.className = 'price-history-item';
+    div.innerHTML = `
+      <span class="ph-date">${entry.date}</span>
+      <span class="ph-product">${p ? p.name : entry.productId}</span>
+      <span class="ph-change">${fieldLabel}: ₹${entry.oldValue} → ₹${entry.newValue}</span>
+    `;
+    list.appendChild(div);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
