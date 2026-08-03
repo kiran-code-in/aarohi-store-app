@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
-  base: './',
+  base: '/aarohi-store-app/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
