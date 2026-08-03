@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══ Base ═══ */
+html, body {
+  @apply h-full overflow-hidden bg-slate-50 text-slate-900 font-sans;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══ App Shell ═══ */
+.app-shell { @apply h-full flex flex-col; }
+
+.app-header {
+  @apply flex items-center justify-between px-4 py-3 bg-primary text-white;
+  min-height: 56px;
+}
+.app-header .logo { @apply w-8 h-8 rounded-lg object-contain; }
+.app-header .title { @apply text-sm font-extrabold leading-tight; }
+.app-header .date { @apply text-[11px] opacity-80; }
+.app-header .nav-btns { @apply flex gap-1; }
+.app-header .nav-btns button {
+  @apply text-xs font-semibold px-2 py-1 rounded bg-white/10 active:bg-white/20;
+}
+
+.app-content {
+  @apply flex-1 overflow-y-auto;
+  padding-bottom: 68px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══ Bottom Nav ═══ */
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 flex bg-white shadow-nav z-50;
+  height: 64px;
+}
+.bottom-nav button {
+  @apply flex-1 flex flex-col items-center justify-center gap-0.5
+         text-muted text-[10px] font-semibold transition-all;
+}
+.bottom-nav button.active {
+  @apply text-white bg-primary rounded-none;
+}
+.bottom-nav button .nav-icon { @apply text-lg; }
+
+/* ═══ Pages ═══ */
+.page { @apply hidden; }
+.page.active { @apply block; }
+
+/* ═══ Page Header (sub-pages) ═══ */
+.page-head {
+  @apply flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-100 sticky top-0 z-10;
+}
+.page-head .back { @apply text-primary font-bold text-lg cursor-pointer; }
+.page-head .title { @apply text-section font-extrabold; }
+
+/* ═══ Summary Strip ═══ */
+.summary-strip {
+  @apply grid grid-cols-4 bg-primary text-white mx-3 mt-3 rounded-card overflow-hidden;
+}
+.summary-strip .stat {
+  @apply flex flex-col items-center py-2.5 border-r border-white/10 last:border-r-0;
+}
+.summary-strip .stat-label { @apply text-[9px] uppercase tracking-wider opacity-70; }
+.summary-strip .stat-value { @apply text-base font-extrabold; }
+
+/* ═══ Action Grid ═══ */
+.action-grid {
+  @apply grid grid-cols-2 gap-2 px-3 mt-3;
+}
+.action-card {
+  @apply flex items-center gap-3 bg-white rounded-card p-3 shadow-card
+         active:scale-[0.97] transition-transform cursor-pointer;
+}
+.action-card .icon { @apply text-xl; }
+.action-card .label { @apply text-body font-bold text-slate-800; }
+.action-card .sub { @apply text-caption text-muted; }
+
+/* ═══ Quick Actions Row ═══ */
+.quick-row {
+  @apply flex gap-2 px-3 mt-2;
+}
+.quick-btn {
+  @apply flex-1 text-center py-2 rounded-lg text-caption font-bold
+         border border-primary text-primary active:bg-primary active:text-white;
+}
+
+/* ═══ Category Tabs ═══ */
+.cat-tabs {
+  @apply flex gap-1.5 overflow-x-auto px-4 py-2.5 bg-white border-b border-slate-100;
+  scrollbar-width: none;
+}
+.cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  @apply px-3 py-1.5 rounded-full text-caption font-semibold whitespace-nowrap
+         bg-slate-100 text-slate-600 cursor-pointer;
+}
+.cat-tab.active {
+  @apply bg-primary text-white;
+}
+
+/* ═══ Product Rows (compact) ═══ */
+.product-row {
+  @apply flex items-center justify-between px-4 py-2.5 border-b border-slate-100;
+}
+.product-row .info { @apply flex flex-col; }
+.product-row .name { @apply text-body font-semibold text-slate-800; }
+.product-row .meta { @apply text-caption text-muted; }
+.product-row .actions { @apply flex items-center gap-1; }
+
+.stepper {
+  @apply flex items-center rounded-lg overflow-hidden border border-slate-200;
+}
+.stepper button {
+  @apply w-8 h-8 flex items-center justify-center text-base font-bold
+         bg-slate-50 active:bg-primary active:text-white transition-colors;
+}
+.stepper .count {
+  @apply w-8 h-8 flex items-center justify-center text-body font-extrabold bg-white;
+}
+
+/* ═══ Sub-type Header ═══ */
+.subtype-head {
+  @apply text-[10px] font-bold uppercase tracking-wider text-primary
+         px-4 pt-3 pb-1 bg-slate-50;
+}
+
+/* ═══ Section inside page ═══ */
+.section-label {
+  @apply text-caption font-bold uppercase tracking-wider text-muted px-4 pt-4 pb-1;
+}
+
+/* ═══ Prices Table ═══ */
+.price-table {
+  @apply w-full text-caption;
+}
+.price-table th {
+  @apply text-left py-2 px-2 font-semibold text-muted uppercase tracking-wider bg-slate-50 sticky top-0;
+}
+.price-table td {
+  @apply py-2 px-2 border-b border-slate-100;
+}
+.price-table input {
+  @apply w-16 text-center py-1 px-1 rounded border border-slate-200
+         text-body font-bold focus:border-primary focus:outline-none;
+}
+
+/* ═══ Customer Row ═══ */
+.cust-row {
+  @apply flex items-center justify-between px-4 py-2.5 border-b border-slate-100 cursor-pointer active:bg-slate-50;
+}
+.cust-row.added { @apply bg-emerald-50 cursor-default; }
+.cust-row .name { @apply text-body font-semibold; }
+.cust-row .status { @apply text-caption text-muted; }
+.cust-row.added .status { @apply text-emerald-600; }
+
+/* ═══ History Card ═══ */
+.history-card {
+  @apply bg-white rounded-card shadow-card overflow-hidden;
+}
+.history-card .head {
+  @apply flex items-center justify-between px-4 py-3 cursor-pointer active:bg-slate-50;
+}
+.history-card .head .date { @apply text-body font-bold; }
+.history-card .head .total { @apply text-body font-bold text-emerald-600; }
+.history-card .body { @apply hidden px-4 pb-3; }
+.history-card .body.open { @apply block; }
+
+/* ═══ Toast ═══ */
+#saveToast {
+  @apply fixed bottom-20 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full
+         bg-slate-800 text-white text-caption font-semibold
+         opacity-0 transition-opacity pointer-events-none z-[999];
+}
+#saveToast.show { @apply opacity-100; }
+
+/* ═══ Modal ═══ */
+.modal-bg {
+  @apply fixed inset-0 bg-black/40 hidden items-center justify-center z-[200] p-5;
+  backdrop-filter: blur(2px);
+}
+.modal-bg.open { @apply flex; }
+.modal-box {
+  @apply bg-white rounded-card p-5 w-full max-w-sm shadow-xl;
+}
+.modal-box .title { @apply text-section font-extrabold mb-3; }
+.modal-box input {
+  @apply w-full px-3 py-2 rounded-lg border border-slate-200 text-body
+         focus:border-primary focus:outline-none;
+}
+.modal-box .actions { @apply flex gap-2 mt-4; }
+.modal-box .actions button { @apply flex-1 py-2 rounded-lg font-bold text-body; }
+.modal-box .btn-cancel { @apply bg-slate-100 text-slate-600; }
+.modal-box .btn-confirm { @apply bg-primary text-white; }
+
+
+/* ═══ Stock Input ═══ */
+.stock-input {
+  @apply w-16 text-center py-1.5 rounded-lg border border-slate-200
+         text-body font-extrabold focus:border-primary focus:outline-none;
+}

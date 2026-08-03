@@ -13,3 +13,7 @@ Thumbs.db
 read_excel.js
 read_excel.ps1
 extract.ps1
+
+node_modules/
+.env
+dist/
