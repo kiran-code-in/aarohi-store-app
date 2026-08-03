@@ -1,0 +1,19 @@
+{
+  "name": "Aarohi Enterprises",
+  "short_name": "Aarohi",
+  "description": "Daily inventory & sales tracker — Aarohi Enterprises, Dodla dairy products",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1E2A35",
+  "theme_color": "#1E2A35",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

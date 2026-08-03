@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F766E" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Aarohi Enterprises</title>
+  <link rel="manifest" href="./assets/manifest-Cx1Mu8GN.json" />
+  <script type="module" crossorigin src="./assets/index-C0A4K5V5.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BqHWjyUZ.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="flex items-center gap-2.5">
+      <img src="./assets/logo-vnJ7CK6_.png" alt="AE" class="logo" />
+      <div>
+        <div class="title">Aarohi Enterprises</div>
+        <div class="date" id="headerDate"></div>
+      </div>
+    </div>
+    <div class="nav-btns">
+      <button id="prevDayBtn">‹</button>
+      <button id="todayBtn">Today</button>
+      <button id="nextDayBtn">›</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="app-content">
+
+    <!-- HOME -->
+    <section class="page active" id="page-home">
+      <div class="summary-strip" id="dashSummary">
+        <div class="stat"><span class="stat-label">Revenue</span><span class="stat-value" id="dashRevenue">₹0</span></div>
+        <div class="stat"><span class="stat-label">Profit</span><span class="stat-value" id="dashProfit">₹0</span></div>
+        <div class="stat"><span class="stat-label">Sold</span><span class="stat-value" id="dashSold">0</span></div>
+        <div class="stat"><span class="stat-label">Damaged</span><span class="stat-value" id="dashDamaged">0</span></div>
+      </div>
+
+      <div class="action-grid">
+        <div class="action-card" data-goto="stock">
+          <span class="icon">📦</span>
+          <div><div class="label">Stock In</div><div class="sub">Record received</div></div>
+        </div>
+        <div class="action-card" data-goto="sales">
+          <span class="icon">🛒</span>
+          <div><div class="label">Sales</div><div class="sub">Retail & Bulk</div></div>
+        </div>
+        <div class="action-card" data-goto="wholesale">
+          <span class="icon">👥</span>
+          <div><div class="label">Wholesale</div><div class="sub">Customer orders</div></div>
+        </div>
+        <div class="action-card" data-goto="prices">
+          <span class="icon">💰</span>
+          <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
+        </div>
+      </div>
+
+      <div class="quick-row">
+        <button class="quick-btn" data-goto="scan">📷 Scan</button>
+        <button class="quick-btn" data-goto="history">📅 History</button>
+      </div>
+
+      <div class="section-label">Today's Sales</div>
+      <div id="dashTodaySales" class="px-3"></div>
+
+      <div class="section-label">Low Stock</div>
+      <div id="dashLowStock" class="px-3 pb-4"></div>
+    </section>
+
+    <!-- STOCK IN -->
+    <section class="page" id="page-stock">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📦 Stock In</span></div>
+      <div class="cat-tabs" id="stockCatTabs"></div>
+      <div id="stockList"></div>
+    </section>
+
+    <!-- SALES -->
+    <section class="page" id="page-sales">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">🛒 Sales</span></div>
+      <div class="cat-tabs" id="salesCatTabs"></div>
+      <div id="salesList"></div>
+    </section>
+
+    <!-- WHOLESALE -->
+    <section class="page" id="page-wholesale">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">👥 Wholesale</span></div>
+      <div class="px-4 py-2">
+        <input type="text" id="customerSearchInput" placeholder="🔍 Search customer..."
+               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none" />
+      </div>
+      <div id="customerListScroll" class="max-h-36 overflow-y-auto"></div>
+      <div class="px-4 py-2">
+        <button class="w-full py-2 rounded-lg border-2 border-dashed border-primary text-primary font-bold text-caption" id="addCustomerBtn">＋ Add New Customer</button>
+      </div>
+      <div class="section-label">Today's Orders</div>
+      <div id="wholesaleCustomerList" class="pb-4"></div>
+    </section>
+
+    <!-- SCAN -->
+    <section class="page" id="page-scan">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📷 Quick Add</span></div>
+      <div class="p-4 space-y-3">
+        <select id="scanProductSelect" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none">
+          <option value="">-- Select Product --</option>
+        </select>
+        <div class="flex items-center justify-center gap-3">
+          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyMinus">−</button>
+          <input type="number" id="qtyInput" class="w-16 text-center py-2 rounded-lg border border-slate-200 text-xl font-extrabold" value="1" min="1" />
+          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyPlus">+</button>
+        </div>
+        <div class="flex gap-1.5">
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-primary text-white" data-type="received">Received</button>
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="sold">Sold</button>
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="damaged">Damaged</button>
+        </div>
+        <button class="w-full py-2.5 rounded-lg bg-emerald-600 text-white font-bold" id="applyCountBtn">✓ Apply</button>
+        <div id="scanFeedback" class="text-center text-caption font-semibold hidden"></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="page" id="page-history">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📅 History</span></div>
+      <div id="historyList" class="p-3 space-y-2"></div>
+    </section>
+
+    <!-- PRICES -->
+    <section class="page" id="page-prices">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">💰 Prices</span></div>
+      <div class="overflow-x-auto px-3 pt-2">
+        <table class="price-table" id="priceTable">
+          <thead><tr><th>Product</th><th>Buy</th><th>Retail</th><th>Wholesale</th></tr></thead>
+          <tbody id="priceTableBody"></tbody>
+        </table>
+      </div>
+      <div class="section-label">Change History</div>
+      <div id="priceHistoryList" class="px-4 pb-6"></div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="active" data-page="home"><span class="nav-icon">🏠</span>Home</button>
+    <button data-page="stock"><span class="nav-icon">📦</span>Stock</button>
+    <button data-page="sales"><span class="nav-icon">🛒</span>Sales</button>
+    <button data-page="history"><span class="nav-icon">📈</span>Reports</button>
+    <button data-page="prices"><span class="nav-icon">⚙️</span>More</button>
+  </nav>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="addCustomerModal">
+  <div class="modal-box">
+    <div class="title">Add Customer</div>
+    <input type="text" id="customerNameInput" placeholder="Customer name" autocomplete="off" />
+    <div class="actions">
+      <button class="btn-cancel" id="cancelCustomerBtn">Cancel</button>
+      <button class="btn-confirm" id="confirmCustomerBtn">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="saveToast"></div>
+
+</body>
+</html>
