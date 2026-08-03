@@ -93,8 +93,11 @@ function feedback(msg: string, ok: boolean): void {
   const el = document.getElementById('scanFeedback');
   if (!el) return;
   el.textContent = msg;
-  el.className = 'scan-feedback ' + (ok ? 'success' : 'error');
-  setTimeout(() => { el.className = 'scan-feedback'; }, 3000);
+  el.className = ok
+    ? 'text-center text-caption font-semibold py-2 px-3 rounded-lg bg-emerald-50 text-emerald-700'
+    : 'text-center text-caption font-semibold py-2 px-3 rounded-lg bg-red-50 text-red-700';
+  el.classList.remove('hidden');
+  setTimeout(() => { el.className = 'hidden'; }, 3000);
 }
 
 async function startCamera(): Promise<void> {

@@ -1,5 +1,5 @@
 /**
- * history.ts — Sales history: last 14 days summary cards.
+ * history.ts — Sales history: last 14 days, expandable cards.
  */
 
 import { AppState, formatCurrency } from '@/lib/state';
@@ -8,7 +8,7 @@ import { inventoryService } from '@/services';
 export async function renderHistory(): Promise<void> {
   const list = document.getElementById('historyList');
   if (!list) return;
-  list.innerHTML = '<div class="text-center py-8 text-base-content/50">Loading...</div>';
+  list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Loading...</div>';
 
   const days: string[] = [];
   for (let i = 0; i < 14; i++) {
@@ -29,26 +29,23 @@ export async function renderHistory(): Promise<void> {
     });
 
     const card = document.createElement('div');
-    card.className = 'collapse collapse-arrow bg-base-100 border border-base-300 rounded-xl';
+    card.className = 'history-card';
     card.innerHTML = `
-      <input type="checkbox" />
-      <div class="collapse-title flex justify-between items-center pr-10">
-        <span class="font-bold text-sm">${display}</span>
-        <span class="text-sm font-bold text-success">${formatCurrency(s.total_revenue)}</span>
+      <div class="head" data-key="${dateKey}">
+        <span class="date">${display}</span>
+        <span class="total">${formatCurrency(s.total_revenue)}</span>
       </div>
-      <div class="collapse-content">
-        <div class="space-y-1 text-xs">
-          ${s.products.filter(p => p.sold > 0 || p.received > 0).map(p => `
-            <div class="flex justify-between py-1 border-b border-base-200 last:border-0">
-              <span>${p.product_name}</span>
-              <span class="text-base-content/60">Recd ${p.received} · Sold ${p.sold}</span>
-              <span class="font-bold text-success">${formatCurrency(p.sold * p.retail_price)}</span>
-            </div>
-          `).join('')}
-          <div class="flex justify-between pt-2 font-bold text-sm border-t border-base-300">
-            <span>Profit</span>
-            <span class="text-success">${formatCurrency(s.total_profit)}</span>
+      <div class="body" id="hist_${dateKey}">
+        ${s.products.filter(p => p.sold > 0 || p.received > 0).map(p => `
+          <div class="flex justify-between items-center py-1 border-b border-slate-50 text-caption">
+            <span class="text-slate-700">${p.product_name}</span>
+            <span class="text-muted">R:${p.received} S:${p.sold} D:${p.damaged}</span>
+            <span class="font-bold text-emerald-600">${formatCurrency(p.sold * p.retail_price)}</span>
           </div>
+        `).join('')}
+        <div class="flex justify-between pt-2 mt-1 border-t border-slate-200 text-body font-bold">
+          <span>Profit</span>
+          <span class="text-emerald-600">${formatCurrency(s.total_profit)}</span>
         </div>
       </div>
     `;
@@ -56,6 +53,14 @@ export async function renderHistory(): Promise<void> {
   }
 
   if (!hasData) {
-    list.innerHTML = '<div class="text-center py-12 text-base-content/50">No history yet. Start recording stock & sales.</div>';
+    list.innerHTML = '<div class="text-center py-12 text-muted text-caption">No history yet. Start recording stock & sales.</div>';
   }
+
+  // Toggle
+  list.querySelectorAll<HTMLElement>('.head').forEach(h => {
+    h.addEventListener('click', () => {
+      const body = document.getElementById(`hist_${h.dataset.key}`);
+      if (body) body.classList.toggle('open');
+    });
+  });
 }

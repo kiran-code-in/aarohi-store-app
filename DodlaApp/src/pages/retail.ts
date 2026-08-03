@@ -46,11 +46,11 @@ function renderCategoryTabs(): void {
 async function renderProducts(): Promise<void> {
   const list = document.getElementById('salesList');
   if (!list || !activeCategory) return;
-  list.innerHTML = '<div class="text-center py-8 text-base-content/50">Loading...</div>';
+  list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Loading...</div>';
 
   const prodRes = await productService.getByCategory(activeCategory.id);
   if (!prodRes.data) {
-    list.innerHTML = '<div class="text-center py-8 text-base-content/50">Failed to load</div>';
+    list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Failed to load</div>';
     return;
   }
 

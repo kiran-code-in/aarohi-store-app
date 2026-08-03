@@ -56,17 +56,17 @@ function renderCustomerList(filter: string): void {
   );
 
   if (filtered.length === 0 && filter) {
-    container.innerHTML = '<div class="cl-empty">No match. Use "+ Add New" below.</div>';
+    container.innerHTML = '<div class="text-center text-caption text-muted py-4">No match. Use "+ Add New" below.</div>';
     return;
   }
 
   filtered.forEach(cust => {
     const alreadyAdded = todayCustomers.some(c => c.id === cust.id);
     const row = document.createElement('div');
-    row.className = 'cl-row' + (alreadyAdded ? ' cl-added' : '');
+    row.className = 'cust-row' + (alreadyAdded ? ' added' : '');
     row.innerHTML = `
-      <span class="cl-name">${cust.name}</span>
-      <span class="cl-status">${alreadyAdded ? '✓ Added' : 'Tap to add'}</span>
+      <span class="name">${cust.name}</span>
+      <span class="status">${alreadyAdded ? '✓ Added' : 'Tap to add'}</span>
     `;
     if (!alreadyAdded) {
       row.addEventListener('click', () => addCustomerToday(cust));
@@ -118,22 +118,22 @@ async function renderCustomerCards(): Promise<void> {
     custTx.forEach((qty, pid) => { subtotal += qty * (priceMap.get(pid) || 0); });
 
     const card = document.createElement('div');
-    card.className = 'customer-card';
+    card.className = 'bg-white rounded-card shadow-card mb-2 mx-3 overflow-hidden';
     card.innerHTML = `
-      <div class="customer-header" data-idx="${idx}">
-        <span class="customer-name">${cust.name}</span>
-        <span class="customer-subtotal">${formatCurrency(subtotal)}</span>
-        <button class="customer-toggle" data-idx="${idx}">▾</button>
+      <div class="flex items-center justify-between px-4 py-3 cursor-pointer bg-slate-50 border-b border-slate-100" data-idx="${idx}">
+        <span class="font-bold text-body">${cust.name}</span>
+        <span class="text-caption font-bold text-primary">${formatCurrency(subtotal)}</span>
+        <span class="text-muted text-sm" data-idx="${idx}">▾</span>
       </div>
-      <div class="customer-body${idx === 0 ? ' open' : ''}" id="custBody_${idx}">
+      <div class="${idx === 0 ? 'block' : 'hidden'} px-4 py-2 space-y-2" id="custBody_${idx}">
         ${products.map(p => {
           const qty = custTx.get(p.id) || 0;
           const wsPrice = priceMap.get(p.id) || 0;
           return `
-            <div class="ws-product-row">
-              <span class="ws-product-label">${p.product_name}</span>
-              <span class="ws-product-price">₹${wsPrice}</span>
-              <input class="ws-qty-input" type="number" min="0"
+            <div class="flex items-center justify-between py-1">
+              <span class="text-body text-slate-700 flex-1">${p.product_name}</span>
+              <span class="text-caption text-muted w-12 text-right">₹${wsPrice}</span>
+              <input class="ws-qty-input stock-input ml-2" type="number" min="0"
                      data-custid="${cust.id}" data-pid="${p.id}"
                      value="${qty}" placeholder="0" />
             </div>`;
@@ -144,14 +144,14 @@ async function renderCustomerCards(): Promise<void> {
   });
 
   // Toggle expand/collapse
-  list.querySelectorAll<HTMLElement>('.customer-header').forEach(h => {
-    h.addEventListener('click', () => {
-      const idx = h.dataset.idx;
-      const body = document.getElementById(`custBody_${idx}`);
-      body?.classList.toggle('open');
-      const toggle = h.querySelector('.customer-toggle');
-      if (toggle && body) toggle.textContent = body.classList.contains('open') ? '▾' : '▸';
-    });
+  list.querySelectorAll<HTMLElement>('[data-idx]').forEach(h => {
+    if (h.tagName === 'DIV' && h.classList.contains('cursor-pointer')) {
+      h.addEventListener('click', () => {
+        const idx = h.dataset.idx;
+        const body = document.getElementById(`custBody_${idx}`);
+        if (body) body.classList.toggle('hidden');
+      });
+    }
   });
 
   // Input change — record wholesale sale
