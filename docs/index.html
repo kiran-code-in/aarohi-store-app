@@ -3,253 +3,173 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1E2A35" />
+  <meta name="theme-color" content="#0F766E" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Aarohi Enterprises</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css?v=8" />
-  <!-- ZXing barcode scanner library -->
-  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <link rel="manifest" href="/aarohi-store-app/assets/manifest-Cx1Mu8GN.json" />
+  <script type="module" crossorigin src="/aarohi-store-app/assets/index-C0A4K5V5.js"></script>
+  <link rel="stylesheet" crossorigin href="/aarohi-store-app/assets/index-BqHWjyUZ.css">
 </head>
 <body>
+<div class="app-shell">
 
-  <!-- ===== TOP HEADER ===== -->
+  <!-- HEADER -->
   <header class="app-header">
-    <div class="header-left">
-      <!-- AE Logo -->
-      <div class="ae-logo">
-        <img src="logo.png" alt="Aarohi Enterprises" />
-      </div>
+    <div class="flex items-center gap-2.5">
+      <img src="/aarohi-store-app/assets/logo-vnJ7CK6_.png" alt="AE" class="logo" />
       <div>
-        <div class="app-title">Aarohi Enterprises</div>
-        <div class="app-date" id="headerDate"></div>
+        <div class="title">Aarohi Enterprises</div>
+        <div class="date" id="headerDate"></div>
       </div>
     </div>
-    <div class="header-right">
-      <button class="icon-btn" id="prevDayBtn" title="Previous day">‹</button>
-      <button class="icon-btn" id="todayBtn" title="Go to today">Today</button>
-      <button class="icon-btn" id="nextDayBtn" title="Next day">›</button>
+    <div class="nav-btns">
+      <button id="prevDayBtn">‹</button>
+      <button id="todayBtn">Today</button>
+      <button id="nextDayBtn">›</button>
     </div>
   </header>
 
-  <!-- ===== PAGES ===== -->
-  <main class="page-container">
+  <!-- CONTENT -->
+  <main class="app-content">
 
-    <!-- PAGE: INVENTORY -->
-    <section class="page active" id="page-inventory">
-      <div class="section-card inv-card">
-        <div class="section-title">📦 Daily Inventory</div>
+    <!-- HOME -->
+    <section class="page active" id="page-home">
+      <div class="summary-strip" id="dashSummary">
+        <div class="stat"><span class="stat-label">Revenue</span><span class="stat-value" id="dashRevenue">₹0</span></div>
+        <div class="stat"><span class="stat-label">Profit</span><span class="stat-value" id="dashProfit">₹0</span></div>
+        <div class="stat"><span class="stat-label">Sold</span><span class="stat-value" id="dashSold">0</span></div>
+        <div class="stat"><span class="stat-label">Damaged</span><span class="stat-value" id="dashDamaged">0</span></div>
+      </div>
 
-        <!-- Category tabs -->
-        <div class="category-tabs" id="categoryTabs"></div>
-
-        <div class="table-scroll">
-          <table class="inv-table" id="inventoryTable">
-            <thead>
-              <tr>
-                <th class="col-product">Product</th>
-                <th class="col-num">Received</th>
-                <th class="col-num">Yesterday</th>
-                <th class="col-num">Sold</th>
-                <th class="col-num">Available</th>
-                <th class="col-num">Damaged</th>
-              </tr>
-            </thead>
-            <tbody id="inventoryBody"></tbody>
-          </table>
+      <div class="action-grid">
+        <div class="action-card" data-goto="stock">
+          <span class="icon">📦</span>
+          <div><div class="label">Stock In</div><div class="sub">Record received</div></div>
         </div>
-        <div class="summary-bar">
-          <div class="summary-item">
-            <span class="summary-label">Revenue</span>
-            <span class="summary-value green" id="totalRevenue">₹0.00</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Profit</span>
-            <span class="summary-value green" id="totalProfit">₹0.00</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Damaged</span>
-            <span class="summary-value red" id="totalDamagedLoss">₹0.00</span>
-          </div>
+        <div class="action-card" data-goto="sales">
+          <span class="icon">🛒</span>
+          <div><div class="label">Sales</div><div class="sub">Retail & Bulk</div></div>
+        </div>
+        <div class="action-card" data-goto="wholesale">
+          <span class="icon">👥</span>
+          <div><div class="label">Wholesale</div><div class="sub">Customer orders</div></div>
+        </div>
+        <div class="action-card" data-goto="prices">
+          <span class="icon">💰</span>
+          <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
         </div>
       </div>
-    </section>
 
-    <!-- PAGE: SCAN -->
-    <section class="page" id="page-scan">
-      <div class="section-card scan-card">
-        <div class="section-title">📷 Scan Product</div>
-        <p class="scan-hint">Point camera at product barcode, or select product manually below.</p>
-
-        <div class="scanner-box" id="scannerBox">
-          <video id="scannerVideo" playsinline></video>
-          <div class="scanner-overlay">
-            <div class="scanner-line"></div>
-          </div>
-          <button class="btn-secondary" id="stopScanBtn" style="display:none">✕ Stop Camera</button>
-        </div>
-
-        <button class="btn-primary full-width" id="startScanBtn">📷 Start Camera Scan</button>
-
-        <div class="divider">— OR SELECT MANUALLY —</div>
-
-        <!-- Manual product select -->
-        <div class="scan-result-card" id="scanResultCard">
-          <div class="form-group">
-            <label>Product</label>
-            <select id="scanProductSelect" class="form-select">
-              <option value="">-- Select Product --</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Quantity</label>
-            <div class="qty-row">
-              <button class="qty-btn" id="qtyMinus">−</button>
-              <input type="number" id="qtyInput" class="qty-input" value="1" min="1" />
-              <button class="qty-btn" id="qtyPlus">+</button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Type</label>
-            <div class="type-toggle">
-              <button class="type-btn active" data-type="received" id="typeReceived">Received</button>
-              <button class="type-btn" data-type="sold" id="typeSold">Sold</button>
-              <button class="type-btn" data-type="damaged" id="typeDamaged">Damaged</button>
-            </div>
-          </div>
-          <button class="btn-primary full-width" id="applyCountBtn">✓ Apply Count</button>
-          <div class="scan-feedback" id="scanFeedback"></div>
-        </div>
+      <div class="quick-row">
+        <button class="quick-btn" data-goto="scan">📷 Scan</button>
+        <button class="quick-btn" data-goto="history">📅 History</button>
       </div>
+
+      <div class="section-label">Today's Sales</div>
+      <div id="dashTodaySales" class="px-3"></div>
+
+      <div class="section-label">Low Stock</div>
+      <div id="dashLowStock" class="px-3 pb-4"></div>
     </section>
 
-    <!-- PAGE: WHOLESALE -->
+    <!-- STOCK IN -->
+    <section class="page" id="page-stock">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📦 Stock In</span></div>
+      <div class="cat-tabs" id="stockCatTabs"></div>
+      <div id="stockList"></div>
+    </section>
+
+    <!-- SALES -->
+    <section class="page" id="page-sales">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">🛒 Sales</span></div>
+      <div class="cat-tabs" id="salesCatTabs"></div>
+      <div id="salesList"></div>
+    </section>
+
+    <!-- WHOLESALE -->
     <section class="page" id="page-wholesale">
-      <div class="section-card ws-card">
-        <div class="section-title">🤝 Wholesale Customers</div>
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">👥 Wholesale</span></div>
+      <div class="px-4 py-2">
+        <input type="text" id="customerSearchInput" placeholder="🔍 Search customer..."
+               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none" />
+      </div>
+      <div id="customerListScroll" class="max-h-36 overflow-y-auto"></div>
+      <div class="px-4 py-2">
+        <button class="w-full py-2 rounded-lg border-2 border-dashed border-primary text-primary font-bold text-caption" id="addCustomerBtn">＋ Add New Customer</button>
+      </div>
+      <div class="section-label">Today's Orders</div>
+      <div id="wholesaleCustomerList" class="pb-4"></div>
+    </section>
 
-        <!-- Quick-add regular customers -->
-        <div class="quick-add-section">
-          <input type="text" id="customerSearchInput" class="form-input customer-search"
-                 placeholder="🔍 Search customer name..." autocomplete="off" />
-          <div class="customer-list-scroll" id="customerListScroll"></div>
+    <!-- SCAN -->
+    <section class="page" id="page-scan">
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📷 Quick Add</span></div>
+      <div class="p-4 space-y-3">
+        <select id="scanProductSelect" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none">
+          <option value="">-- Select Product --</option>
+        </select>
+        <div class="flex items-center justify-center gap-3">
+          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyMinus">−</button>
+          <input type="number" id="qtyInput" class="w-16 text-center py-2 rounded-lg border border-slate-200 text-xl font-extrabold" value="1" min="1" />
+          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyPlus">+</button>
         </div>
-
-        <button class="btn-add" id="addCustomerBtn">＋ Add New Customer</button>
-
-        <div id="wholesaleCustomerList"></div>
-
-        <div class="totals-row">
-          <div class="totals-label">Wholesale Totals</div>
-          <div class="table-scroll">
-            <table class="totals-table" id="wholesaleTotalsTable">
-              <thead><tr id="wholesaleTotalsHead"></tr></thead>
-              <tbody><tr id="wholesaleTotalsBody"></tr></tbody>
-            </table>
-          </div>
+        <div class="flex gap-1.5">
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-primary text-white" data-type="received">Received</button>
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="sold">Sold</button>
+          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="damaged">Damaged</button>
         </div>
+        <button class="w-full py-2.5 rounded-lg bg-emerald-600 text-white font-bold" id="applyCountBtn">✓ Apply</button>
+        <div id="scanFeedback" class="text-center text-caption font-semibold hidden"></div>
       </div>
     </section>
 
-    <!-- PAGE: RETAIL -->
-    <section class="page" id="page-retail">
-      <div class="section-card retail-card">
-        <div class="section-title">🛒 Retail Sales</div>
-        <p class="hint-text">Enter totals sold to walk-in customers today.</p>
-        <div class="table-scroll">
-          <table class="inv-table" id="retailTable">
-            <thead>
-              <tr>
-                <th class="col-product">Product</th>
-                <th class="col-num">Qty Sold (Retail)</th>
-                <th class="col-num">Amount</th>
-              </tr>
-            </thead>
-            <tbody id="retailBody"></tbody>
-            <tfoot>
-              <tr>
-                <td class="col-product bold">Total</td>
-                <td class="col-num bold" id="retailTotalQty">0</td>
-                <td class="col-num bold green" id="retailTotalAmt">₹0.00</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- PAGE: HISTORY -->
+    <!-- HISTORY -->
     <section class="page" id="page-history">
-      <div class="section-card hist-card">
-        <div class="section-title">📅 Sales History</div>
-        <div id="historyList" class="history-list"></div>
-      </div>
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">📅 History</span></div>
+      <div id="historyList" class="p-3 space-y-2"></div>
     </section>
 
-    <!-- PAGE: PRICES -->
+    <!-- PRICES -->
     <section class="page" id="page-prices">
-      <div class="section-card">
-        <div class="section-title">💰 Price Management</div>
-        <p class="hint-text">Update Buy, Retail (MRP), or Wholesale price. Changes are saved with date for reference.</p>
-        <div id="pricesBody" class="prices-body"></div>
+      <div class="page-head"><span class="back" data-back>←</span><span class="title">💰 Prices</span></div>
+      <div class="overflow-x-auto px-3 pt-2">
+        <table class="price-table" id="priceTable">
+          <thead><tr><th>Product</th><th>Buy</th><th>Retail</th><th>Wholesale</th></tr></thead>
+          <tbody id="priceTableBody"></tbody>
+        </table>
       </div>
-      <div class="section-card">
-        <div class="section-title">📋 Price Change History</div>
-        <div id="priceHistoryList" class="price-history-list"></div>
-      </div>
+      <div class="section-label">Change History</div>
+      <div id="priceHistoryList" class="px-4 pb-6"></div>
     </section>
 
   </main>
 
-  <!-- ===== BOTTOM NAV ===== -->
+  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
-    <button class="nav-btn active" data-page="inventory">
-      <span class="nav-icon">📦</span>
-      <span class="nav-label">Inventory</span>
-    </button>
-    <button class="nav-btn" data-page="scan">
-      <span class="nav-icon">📷</span>
-      <span class="nav-label">Scan</span>
-    </button>
-    <button class="nav-btn" data-page="wholesale">
-      <span class="nav-icon">🤝</span>
-      <span class="nav-label">Wholesale</span>
-    </button>
-    <button class="nav-btn" data-page="retail">
-      <span class="nav-icon">🛒</span>
-      <span class="nav-label">Retail</span>
-    </button>
-    <button class="nav-btn" data-page="history">
-      <span class="nav-icon">📅</span>
-      <span class="nav-label">History</span>
-    </button>
-    <button class="nav-btn" data-page="prices">
-      <span class="nav-icon">💰</span>
-      <span class="nav-label">Prices</span>
-    </button>
+    <button class="active" data-page="home"><span class="nav-icon">🏠</span>Home</button>
+    <button data-page="stock"><span class="nav-icon">📦</span>Stock</button>
+    <button data-page="sales"><span class="nav-icon">🛒</span>Sales</button>
+    <button data-page="history"><span class="nav-icon">📈</span>Reports</button>
+    <button data-page="prices"><span class="nav-icon">⚙️</span>More</button>
   </nav>
 
-  <!-- ===== ADD CUSTOMER MODAL ===== -->
-  <div class="modal-overlay" id="addCustomerModal">
-    <div class="modal">
-      <div class="modal-title">➕ Add New Customer</div>
-      <p style="font-size:12px;color:#888;margin-bottom:12px">Enter a name not in the regular list</p>
-      <div class="form-group">
-        <label>Customer Name</label>
-        <input type="text" id="customerNameInput" class="form-input" placeholder="e.g. Ramesh" autocomplete="off" />
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="cancelCustomerBtn">Cancel</button>
-        <button class="btn-primary" id="confirmCustomerBtn">Add</button>
-      </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="addCustomerModal">
+  <div class="modal-box">
+    <div class="title">Add Customer</div>
+    <input type="text" id="customerNameInput" placeholder="Customer name" autocomplete="off" />
+    <div class="actions">
+      <button class="btn-cancel" id="cancelCustomerBtn">Cancel</button>
+      <button class="btn-confirm" id="confirmCustomerBtn">Add</button>
     </div>
   </div>
+</div>
 
-  <!-- ===== SAVE TOAST ===== -->
-  <div class="toast" id="saveToast">✓ Saved</div>
+<!-- TOAST -->
+<div id="saveToast"></div>
 
-  <script src="app.js"></script>
 </body>
 </html>
