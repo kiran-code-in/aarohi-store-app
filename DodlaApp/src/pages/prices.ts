@@ -18,13 +18,24 @@ export async function renderPrices(): Promise<void> {
 
   tbody.innerHTML = '';
   let currentCat = '';
+  let currentType = '';
 
   prodRes.data.forEach(p => {
     const catName = (p as unknown as { category_name: string }).category_name || '';
     if (catName !== currentCat) {
       currentCat = catName;
+      currentType = '';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4" class="text-[10px] font-bold uppercase tracking-wider text-primary pt-3 pb-1">${catName}</td>`;
+      tr.innerHTML = `<td colspan="4" class="text-[10px] font-bold uppercase tracking-wider text-primary pt-4 pb-1 border-b border-primary/20">${catName}</td>`;
+      tbody.appendChild(tr);
+    }
+
+    // Product type sub-header (e.g. Cup, Small Cone, Family Pack)
+    const pType = p.product_type || '';
+    if (pType && pType !== currentType) {
+      currentType = pType;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="4" class="text-[10px] font-semibold text-muted pt-2 pb-0.5 pl-2">— ${pType}</td>`;
       tbody.appendChild(tr);
     }
 

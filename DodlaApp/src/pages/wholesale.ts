@@ -3,7 +3,7 @@
  */
 
 import { AppState, formatCurrency } from '@/lib/state';
-import { customerService, productService, inventoryService } from '@/services';
+import { customerService, productService, inventoryService, categoryService } from '@/services';
 import { priceService } from '@/services';
 import { showToast } from '@/components/toast';
 import { closeModal } from '@/components/modal';
@@ -20,10 +20,18 @@ export async function renderWholesale(): Promise<void> {
     if (res.data) customers = res.data;
   }
 
-  // Load products
+  // Load products — wholesale only uses Milk/Dairy products
   if (products.length === 0) {
-    const prodRes = await productService.getActive();
-    if (prodRes.data) products = prodRes.data.map(p => p as Product);
+    const catRes = await categoryService.getAll();
+    const milkCat = catRes.data?.find(c => c.name.toLowerCase().includes('milk') || c.name.toLowerCase().includes('dairy'));
+    if (milkCat) {
+      const prodRes = await productService.getByCategory(milkCat.id);
+      if (prodRes.data) products = prodRes.data;
+    } else {
+      // Fallback: load all
+      const prodRes = await productService.getActive();
+      if (prodRes.data) products = prodRes.data.map(p => p as Product);
+    }
   }
 
   renderCustomerSearch();
@@ -125,19 +133,28 @@ async function renderCustomerCards(): Promise<void> {
         <span class="text-caption font-bold text-primary">${formatCurrency(subtotal)}</span>
         <span class="text-muted text-sm" data-idx="${idx}">▾</span>
       </div>
-      <div class="${idx === 0 ? 'block' : 'hidden'} px-4 py-2 space-y-2" id="custBody_${idx}">
-        ${products.map(p => {
-          const qty = custTx.get(p.id) || 0;
-          const wsPrice = priceMap.get(p.id) || 0;
-          return `
-            <div class="flex items-center justify-between py-1">
-              <span class="text-body text-slate-700 flex-1">${p.product_name}</span>
-              <span class="text-caption text-muted w-12 text-right">₹${wsPrice}</span>
-              <input class="ws-qty-input stock-input ml-2" type="number" min="0"
-                     data-custid="${cust.id}" data-pid="${p.id}"
-                     value="${qty}" placeholder="0" />
-            </div>`;
-        }).join('')}
+      <div class="${idx === 0 ? 'block' : 'hidden'} px-4 py-2 space-y-1" id="custBody_${idx}">
+        ${(() => {
+          let currentType = '';
+          return products.map(p => {
+            const qty = custTx.get(p.id) || 0;
+            const wsPrice = priceMap.get(p.id) || 0;
+            let typeHeader = '';
+            const pType = p.product_type || '';
+            if (pType && pType !== currentType) {
+              currentType = pType;
+              typeHeader = `<div class="text-[10px] font-bold uppercase tracking-wider text-primary pt-2 pb-0.5">— ${pType}</div>`;
+            }
+            return `${typeHeader}
+              <div class="flex items-center justify-between py-1">
+                <span class="text-body text-slate-700 flex-1">${p.product_name}</span>
+                <span class="text-caption text-muted w-12 text-right">₹${wsPrice}</span>
+                <input class="ws-qty-input stock-input ml-2" type="number" min="0"
+                       data-custid="${cust.id}" data-pid="${p.id}"
+                       value="${qty}" placeholder="0" />
+              </div>`;
+          }).join('');
+        })()}
       </div>
     `;
     list.appendChild(card);
