@@ -6,16 +6,19 @@
   <meta name="theme-color" content="#0F766E" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Aarohi Enterprises</title>
   <link rel="manifest" href="manifest.json" />
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
   <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
 <div class="app-shell">
 
-  <!-- HEADER -->
+  <!-- ══ HEADER ══ -->
   <header class="app-header">
-    <div class="flex items-center gap-2.5">
+    <div style="display:flex;align-items:center;gap:10px">
       <img src="logo.png" alt="AE" class="logo" />
       <div>
         <div class="title">Aarohi Enterprises</div>
@@ -23,139 +26,224 @@
       </div>
     </div>
     <div class="nav-btns">
-      <button id="prevDayBtn">‹</button>
+      <button id="prevDayBtn"><i class="ph ph-caret-left"></i></button>
       <button id="todayBtn">Today</button>
-      <button id="nextDayBtn">›</button>
+      <button id="nextDayBtn"><i class="ph ph-caret-right"></i></button>
     </div>
   </header>
 
-  <!-- CONTENT -->
+  <!-- ══ CONTENT ══ -->
   <main class="app-content">
 
     <!-- HOME -->
     <section class="page active" id="page-home">
+
+      <!-- Stats -->
       <div class="summary-strip" id="dashSummary">
-        <div class="stat"><span class="stat-label">Revenue</span><span class="stat-value" id="dashRevenue">₹0</span></div>
-        <div class="stat"><span class="stat-label">Profit</span><span class="stat-value" id="dashProfit">₹0</span></div>
-        <div class="stat"><span class="stat-label">Sold</span><span class="stat-value" id="dashSold">0</span></div>
-        <div class="stat"><span class="stat-label">Damaged</span><span class="stat-value" id="dashDamaged">0</span></div>
+        <div class="stat">
+          <span class="stat-label">Revenue</span>
+          <span class="stat-value profit" id="dashRevenue">₹0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Profit</span>
+          <span class="stat-value profit" id="dashProfit">₹0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Sold</span>
+          <span class="stat-value" id="dashSold">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Damaged</span>
+          <span class="stat-value loss" id="dashDamaged">0</span>
+        </div>
       </div>
 
+      <!-- Action cards -->
       <div class="action-grid">
-        <div class="action-card" data-goto="stock">
-          <span class="icon">📦</span>
+        <div class="action-card card-teal" data-goto="stock">
+          <div class="icon-wrap"><i class="ph-fill ph-package" style="color:#0F766E"></i></div>
           <div><div class="label">Stock In</div><div class="sub">Record received</div></div>
         </div>
-        <div class="action-card" data-goto="sales">
-          <span class="icon">🛒</span>
-          <div><div class="label">Sales</div><div class="sub">Retail & Bulk</div></div>
+        <div class="action-card card-blue" data-goto="sales">
+          <div class="icon-wrap"><i class="ph-fill ph-storefront" style="color:#2563EB"></i></div>
+          <div><div class="label">Sales</div><div class="sub">Retail & Walk-in</div></div>
         </div>
-        <div class="action-card" data-goto="wholesale">
-          <span class="icon">👥</span>
+        <div class="action-card card-amber" data-goto="wholesale">
+          <div class="icon-wrap"><i class="ph-fill ph-users" style="color:#D97706"></i></div>
           <div><div class="label">Wholesale</div><div class="sub">Customer orders</div></div>
         </div>
-        <div class="action-card" data-goto="prices">
-          <span class="icon">💰</span>
+        <div class="action-card card-rose" data-goto="prices">
+          <div class="icon-wrap"><i class="ph-fill ph-currency-inr" style="color:#E11D48"></i></div>
           <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
         </div>
       </div>
 
+      <!-- Quick actions -->
       <div class="quick-row">
-        <button class="quick-btn" data-goto="scan">📷 Scan</button>
-        <button class="quick-btn" data-goto="history">📅 History</button>
+        <button class="quick-btn" data-goto="scan">
+          <i class="ph ph-barcode"></i> Scan
+        </button>
+        <button class="quick-btn" data-goto="history">
+          <i class="ph ph-clock-counter-clockwise"></i> History
+        </button>
       </div>
 
+      <!-- Today's sales -->
       <div class="section-label">Today's Sales</div>
-      <div id="dashTodaySales" class="px-3"></div>
+      <div id="dashTodaySales" style="padding:0 0 4px"></div>
 
-      <div class="section-label">Low Stock</div>
-      <div id="dashLowStock" class="px-3 pb-4"></div>
+      <!-- Low stock -->
+      <div class="section-label">Low Stock Alert</div>
+      <div id="dashLowStock" style="padding:0 0 16px"></div>
+
     </section>
 
     <!-- STOCK IN -->
     <section class="page" id="page-stock">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">📦 Stock In</span></div>
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Stock In</span>
+      </div>
       <div class="cat-tabs" id="stockCatTabs"></div>
       <div id="stockList"></div>
     </section>
 
     <!-- SALES -->
     <section class="page" id="page-sales">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">🛒 Sales</span></div>
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Retail Sales</span>
+      </div>
       <div class="cat-tabs" id="salesCatTabs"></div>
       <div id="salesList"></div>
     </section>
 
     <!-- WHOLESALE -->
     <section class="page" id="page-wholesale">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">👥 Wholesale</span></div>
-      <div class="px-4 py-2">
-        <input type="text" id="customerSearchInput" placeholder="🔍 Search customer..."
-               class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none" />
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Wholesale</span>
       </div>
-      <div id="customerListScroll" class="max-h-36 overflow-y-auto"></div>
-      <div class="px-4 py-2">
-        <button class="w-full py-2 rounded-lg border-2 border-dashed border-primary text-primary font-bold text-caption" id="addCustomerBtn">＋ Add New Customer</button>
+      <div style="padding:12px 16px 6px">
+        <div style="position:relative">
+          <i class="ph ph-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94A3B8;font-size:16px"></i>
+          <input type="text" id="customerSearchInput" placeholder="Search customer..."
+                 style="width:100%;height:42px;padding:0 12px 0 36px;border:1.5px solid #E2E8F0;border-radius:12px;font-size:14px;background:#F8FAFC;outline:none;color:#0F172A" />
+        </div>
+      </div>
+      <div id="customerListScroll" style="max-height:160px;overflow-y:auto;border-top:1px solid #F8FAFC"></div>
+      <div style="padding:8px 16px">
+        <button id="addCustomerBtn" style="width:100%;height:40px;border-radius:10px;border:1.5px dashed #CBD5E1;background:transparent;color:#64748B;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          <i class="ph ph-plus"></i> Add New Customer
+        </button>
       </div>
       <div class="section-label">Today's Orders</div>
-      <div id="wholesaleCustomerList" class="pb-4"></div>
+      <div id="wholesaleCustomerList" style="padding-bottom:16px"></div>
     </section>
 
     <!-- SCAN -->
     <section class="page" id="page-scan">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">📷 Quick Add</span></div>
-      <div class="p-4 space-y-3">
-        <select id="scanProductSelect" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-body focus:border-primary focus:outline-none">
-          <option value="">-- Select Product --</option>
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Quick Add</span>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+        <select id="scanProductSelect"
+                style="width:100%;height:46px;padding:0 14px;border:1.5px solid #E2E8F0;border-radius:12px;font-size:14px;background:#F8FAFC;color:#0F172A;outline:none">
+          <option value="">— Select Product —</option>
         </select>
-        <div class="flex items-center justify-center gap-3">
-          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyMinus">−</button>
-          <input type="number" id="qtyInput" class="w-16 text-center py-2 rounded-lg border border-slate-200 text-xl font-extrabold" value="1" min="1" />
-          <button class="w-10 h-10 rounded-lg bg-slate-100 text-lg font-bold active:bg-primary active:text-white" id="qtyPlus">+</button>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+          <button id="qtyMinus" style="width:44px;height:44px;border-radius:12px;border:1.5px solid #E2E8F0;background:#fff;font-size:20px;font-weight:700;color:#64748B;cursor:pointer">−</button>
+          <input type="number" id="qtyInput" value="1" min="1"
+                 style="width:72px;height:44px;text-align:center;border:1.5px solid #E2E8F0;border-radius:12px;font-size:22px;font-weight:800;color:#0F172A;outline:none" />
+          <button id="qtyPlus" style="width:44px;height:44px;border-radius:12px;border:1.5px solid #E2E8F0;background:#fff;font-size:20px;font-weight:700;color:#64748B;cursor:pointer">+</button>
         </div>
-        <div class="flex gap-1.5">
-          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-primary text-white" data-type="received">Received</button>
-          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="sold">Sold</button>
-          <button class="type-btn flex-1 py-2 rounded-lg text-caption font-bold bg-slate-100 text-slate-600" data-type="damaged">Damaged</button>
+
+        <div style="display:flex;gap:8px">
+          <button class="type-btn" data-type="received"
+                  style="flex:1;height:40px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F0FDF9;color:#0F766E;font-size:13px;font-weight:700;cursor:pointer">
+            Received
+          </button>
+          <button class="type-btn" data-type="sold"
+                  style="flex:1;height:40px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-size:13px;font-weight:700;cursor:pointer">
+            Sold
+          </button>
+          <button class="type-btn" data-type="damaged"
+                  style="flex:1;height:40px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-size:13px;font-weight:700;cursor:pointer">
+            Damaged
+          </button>
         </div>
-        <button class="w-full py-2.5 rounded-lg bg-emerald-600 text-white font-bold" id="applyCountBtn">✓ Apply</button>
-        <div id="scanFeedback" class="text-center text-caption font-semibold hidden"></div>
+
+        <button id="applyCountBtn"
+                style="width:100%;height:48px;border-radius:14px;background:#0F766E;color:#fff;font-size:15px;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(15,118,110,0.3)">
+          ✓ &nbsp;Apply
+        </button>
+        <div id="scanFeedback" style="text-align:center;font-size:13px;font-weight:600;display:none"></div>
       </div>
     </section>
 
     <!-- HISTORY -->
     <section class="page" id="page-history">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">📅 History</span></div>
-      <div id="historyList" class="p-3 space-y-2"></div>
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">History</span>
+      </div>
+      <div id="historyList" style="padding:12px;display:flex;flex-direction:column;gap:8px"></div>
     </section>
 
     <!-- PRICES -->
     <section class="page" id="page-prices">
-      <div class="page-head"><span class="back" data-back>←</span><span class="title">💰 Prices</span></div>
-      <div class="overflow-x-auto px-3 pt-2">
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Prices</span>
+      </div>
+      <div style="overflow-x:auto;padding:0 12px 8px">
         <table class="price-table" id="priceTable">
-          <thead><tr><th>Product</th><th>Buy</th><th>Retail</th><th>Wholesale</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Buy</th>
+              <th>Retail</th>
+              <th>Wholesale</th>
+            </tr>
+          </thead>
           <tbody id="priceTableBody"></tbody>
         </table>
       </div>
       <div class="section-label">Change History</div>
-      <div id="priceHistoryList" class="px-4 pb-6"></div>
+      <div id="priceHistoryList" style="padding:0 16px 24px"></div>
     </section>
 
   </main>
 
-  <!-- BOTTOM NAV -->
+  <!-- ══ BOTTOM NAV ══ -->
   <nav class="bottom-nav">
-    <button class="active" data-page="home"><span class="nav-icon">🏠</span>Home</button>
-    <button data-page="stock"><span class="nav-icon">📦</span>Stock</button>
-    <button data-page="sales"><span class="nav-icon">🛒</span>Sales</button>
-    <button data-page="history"><span class="nav-icon">📈</span>Reports</button>
-    <button data-page="prices"><span class="nav-icon">⚙️</span>More</button>
+    <button class="active" data-page="home">
+      <i class="ph-fill ph-house nav-icon"></i>
+      Home
+    </button>
+    <button data-page="stock">
+      <i class="ph-fill ph-package nav-icon"></i>
+      Stock
+    </button>
+    <button data-page="sales">
+      <i class="ph-fill ph-storefront nav-icon"></i>
+      Sales
+    </button>
+    <button data-page="history">
+      <i class="ph-fill ph-chart-bar nav-icon"></i>
+      Reports
+    </button>
+    <button data-page="prices">
+      <i class="ph-fill ph-gear nav-icon"></i>
+      More
+    </button>
   </nav>
 
 </div>
 
-<!-- MODAL -->
+<!-- ══ MODAL: Add Customer ══ -->
 <div class="modal-bg" id="addCustomerModal">
   <div class="modal-box">
     <div class="title">Add Customer</div>
@@ -167,7 +255,7 @@
   </div>
 </div>
 
-<!-- TOAST -->
+<!-- ══ TOAST ══ -->
 <div id="saveToast"></div>
 
 </body>

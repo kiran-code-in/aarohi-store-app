@@ -4,6 +4,7 @@
 
 import './styles/app.css';
 import { onConnectivityChange } from './lib/supabase';
+import { isDemoMode } from './lib/demo-data';
 import { AppState, formatCurrency } from './lib/state';
 import { renderHeader, initHeaderNav } from './components/header';
 import { showToast } from './components/toast';
@@ -61,14 +62,44 @@ async function renderDashboard(): Promise<void> {
   // Today's top sellers
   const salesDiv = document.getElementById('dashTodaySales');
   if (salesDiv) {
-    const sold = s.products.filter(p => p.sold > 0).sort((a, b) => b.sold - a.sold).slice(0, 5);
+    const sold = s.products.filter(p => p.sold > 0).sort((a, b) => b.sold - a.sold).slice(0, 6);
     salesDiv.innerHTML = sold.length === 0
-      ? '<div class="text-caption text-muted py-2">No sales yet today</div>'
-      : sold.map(p => `<div class="product-row"><div class="info"><span class="name">${p.product_name}</span></div><span class="text-body font-bold text-emerald-600">${p.sold} × ₹${p.retail_price}</span></div>`).join('');
+      ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">No sales recorded yet today</div>'
+      : sold.map(p => `
+          <div class="product-row">
+            <div class="info">
+              <span class="name">${p.product_name}</span>
+              <span class="meta">${p.sold} sold</span>
+            </div>
+            <span style="font-size:15px;font-weight:800;color:#0F766E">${formatCurrency(p.sold * p.retail_price)}</span>
+          </div>`).join('');
+  }
+
+  // Low stock alerts
+  const lowDiv = document.getElementById('dashLowStock');
+  if (lowDiv) {
+    const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.received > 0 || p.sold > 0));
+    lowDiv.innerHTML = low.length === 0
+      ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">All items well stocked</div>'
+      : low.map(p => `
+          <div class="product-row">
+            <div class="info"><span class="name">${p.product_name}</span></div>
+            <span style="font-size:13px;font-weight:700;color:#DC2626">${p.available} left</span>
+          </div>`).join('');
   }
 }
 
 async function boot(): Promise<void> {
+  // Demo mode banner
+  if (isDemoMode()) {
+    const banner = document.createElement('div');
+    banner.textContent = '🧪 DEMO MODE — test data only, not saved to database';
+    banner.style.cssText = 'background:#F59E0B;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:5px;position:fixed;top:0;left:0;right:0;z-index:999';
+    document.body.appendChild(banner);
+    const header = document.querySelector('.app-header') as HTMLElement;
+    if (header) header.style.marginTop = '24px';
+  }
+
   renderHeader();
   initHeaderNav(() => navigateTo('home'));
 

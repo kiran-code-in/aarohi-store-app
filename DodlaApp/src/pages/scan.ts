@@ -53,8 +53,12 @@ export function initScanEvents(): void {
 
   document.querySelectorAll<HTMLButtonElement>('.type-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+      document.querySelectorAll<HTMLElement>('.type-btn').forEach(b => {
+        b.style.background = '#F8FAFC';
+        b.style.color = '#64748B';
+      });
+      btn.style.background = '#0F766E';
+      btn.style.color = '#fff';
       activeScanType = btn.dataset.type as TransactionType;
     });
   });

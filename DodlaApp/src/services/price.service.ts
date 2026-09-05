@@ -5,7 +5,8 @@
 
 import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
-import { ServiceResult } from '@/lib/error-handler';
+import { ServiceResult, success } from '@/lib/error-handler';
+import { isDemoMode, DEMO_PRODUCTS } from '@/lib/demo-data';
 import type { Product, ProductPrice, ProductPriceInsert } from '@/types/database.types';
 
 export interface ProductPriceInfo {
@@ -41,6 +42,14 @@ class PriceService extends BaseService {
 
   /** Get current prices for ALL active products (batch) */
   async getAllCurrentPrices(): Promise<ServiceResult<ProductPriceInfo[]>> {
+    if (isDemoMode()) {
+      return success(DEMO_PRODUCTS.map(p => ({
+        product_id: p.id,
+        purchase_price: p.purchase_price ?? 0,
+        retail_price: p.retail_price ?? 0,
+        wholesale_price: p.wholesale_price ?? 0,
+      })));
+    }
     return this.query<ProductPriceInfo[]>(
       () => supabase
         .from('products')
@@ -128,6 +137,7 @@ class PriceService extends BaseService {
 
   /** Get ALL price history (across all products), newest first */
   async getAllPriceHistory(limit = 50): Promise<ServiceResult<ProductPrice[]>> {
+    if (isDemoMode()) return success([]);
     return this.query<ProductPrice[]>(
       () => supabase
         .from('product_prices')

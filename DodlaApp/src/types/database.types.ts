@@ -72,6 +72,18 @@ export interface InventoryTransaction {
   customer_id: string | null; // uuid FK to customers
 }
 
+export type NoteType = 'payment' | 'balance' | 'note';
+
+export interface CustomerNote {
+  id: number;
+  customer_id: string;
+  note_type: NoteType;
+  amount: number | null;
+  note: string | null;
+  note_date: string | null;
+  created_at: string | null;
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  INSERT TYPES (for creating new records — omit auto-generated fields)
 // ═══════════════════════════════════════════════════════════════
@@ -115,6 +127,23 @@ export interface InventoryTransactionInsert {
   transaction_date: string; // 'YYYY-MM-DD'
   sale_type?: SaleType;
   customer_id?: string | null;
+}
+
+export interface CustomerNoteInsert {
+  customer_id: string;
+  note_type: NoteType;
+  amount?: number;
+  note?: string | null;
+  note_date?: string; // 'YYYY-MM-DD'
+}
+
+/** Customer with computed balance for ledger view */
+export interface CustomerBalance {
+  customer_id: string;
+  customer_name: string;
+  total_purchases: number;   // sum of all wholesale sales
+  total_paid: number;        // sum of payments
+  balance: number;           // purchases - paid
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -8,7 +8,7 @@ import { inventoryService } from '@/services';
 export async function renderHistory(): Promise<void> {
   const list = document.getElementById('historyList');
   if (!list) return;
-  list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Loading...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Loading...</div>';
 
   const days: string[] = [];
   for (let i = 0; i < 14; i++) {
@@ -37,15 +37,15 @@ export async function renderHistory(): Promise<void> {
       </div>
       <div class="body" id="hist_${dateKey}">
         ${s.products.filter(p => p.sold > 0 || p.received > 0).map(p => `
-          <div class="flex justify-between items-center py-1 border-b border-slate-50 text-caption">
-            <span class="text-slate-700">${p.product_name}</span>
-            <span class="text-muted">R:${p.received} S:${p.sold} D:${p.damaged}</span>
-            <span class="font-bold text-emerald-600">${formatCurrency(p.sold * p.retail_price)}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
+            <span style="color:#334155;font-weight:600;flex:1">${p.product_name}</span>
+            <span style="color:#94A3B8;font-size:11px">R:${p.received} · S:${p.sold} · D:${p.damaged}</span>
+            <span style="font-weight:700;color:#0F766E;width:64px;text-align:right">${formatCurrency(p.sold * p.retail_price)}</span>
           </div>
         `).join('')}
-        <div class="flex justify-between pt-2 mt-1 border-t border-slate-200 text-body font-bold">
+        <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:4px;border-top:1px solid #F1F5F9;font-size:14px;font-weight:800">
           <span>Profit</span>
-          <span class="text-emerald-600">${formatCurrency(s.total_profit)}</span>
+          <span style="color:#0F766E">${formatCurrency(s.total_profit)}</span>
         </div>
       </div>
     `;
@@ -53,7 +53,7 @@ export async function renderHistory(): Promise<void> {
   }
 
   if (!hasData) {
-    list.innerHTML = '<div class="text-center py-12 text-muted text-caption">No history yet. Start recording stock & sales.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:48px 16px;color:#94A3B8;font-size:13px">No history yet.<br>Start recording stock & sales.</div>';
   }
 
   // Toggle

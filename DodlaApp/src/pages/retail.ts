@@ -6,7 +6,7 @@ import { AppState } from '@/lib/state';
 import { categoryService, productService, inventoryService } from '@/services';
 import { priceService } from '@/services';
 import { showToast } from '@/components/toast';
-import type { Category, InventoryTransactionInsert } from '@/types/database.types';
+import type { Category } from '@/types/database.types';
 
 let categories: Category[] = [];
 let activeCategory: Category | null = null;
@@ -46,11 +46,11 @@ function renderCategoryTabs(): void {
 async function renderProducts(): Promise<void> {
   const list = document.getElementById('salesList');
   if (!list || !activeCategory) return;
-  list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Loading...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Loading...</div>';
 
   const prodRes = await productService.getByCategory(activeCategory.id);
   if (!prodRes.data) {
-    list.innerHTML = '<div class="text-center py-8 text-muted text-caption">Failed to load</div>';
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Failed to load</div>';
     return;
   }
 
@@ -94,46 +94,57 @@ async function renderProducts(): Promise<void> {
     card.innerHTML = `
       <div class="info">
         <span class="name">${p.product_name}</span>
-        <span class="meta">₹${price} · Sold: ${sold}</span>
+        <span class="meta">₹${price} each</span>
       </div>
-      <div class="actions">
-        <div class="stepper">
-          <button data-action="minus" data-id="${p.id}">−</button>
-          <span class="count">${sold}</span>
-          <button data-action="plus" data-id="${p.id}">+</button>
-        </div>
+      <div class="actions" style="display:flex;align-items:center;gap:8px">
+        <button data-action="minus" data-id="${p.id}"
+          style="width:34px;height:34px;border-radius:9px;border:1.5px solid #E2E8F0;background:#fff;font-size:18px;font-weight:700;color:#64748B;cursor:pointer">−</button>
+        <input class="retail-input" type="number" min="0" data-id="${p.id}" value="${sold}"
+          style="width:52px;height:34px;text-align:center;border:1.5px solid #E2E8F0;border-radius:9px;font-size:15px;font-weight:800;color:#0F172A;outline:none" />
+        <button data-action="plus" data-id="${p.id}"
+          style="width:34px;height:34px;border-radius:9px;border:1.5px solid #0F766E;background:#0F766E;font-size:18px;font-weight:700;color:#fff;cursor:pointer">+</button>
       </div>
     `;
     list.appendChild(card);
   });
 
-  // Event delegation
+  // +/- buttons
   list.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const btn = target.closest('[data-action]') as HTMLElement | null;
+    const btn = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
     if (!btn) return;
-
-    const action = btn.dataset.action;
     const productId = parseInt(btn.dataset.id!);
-    if (action === 'plus') recordRetailSale(productId, 1);
+    const input = list.querySelector<HTMLInputElement>(`.retail-input[data-id="${productId}"]`);
+    if (!input) return;
+    let val = parseInt(input.value) || 0;
+    val = btn.dataset.action === 'plus' ? val + 1 : Math.max(0, val - 1);
+    input.value = String(val);
+    setRetailQty(productId, val);
+  });
+
+  // Direct input edit (correction)
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  list.addEventListener('input', (e) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.classList.contains('retail-input')) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      const productId = parseInt(input.dataset.id!);
+      setRetailQty(productId, Math.max(0, parseInt(input.value) || 0));
+    }, 700);
   });
 }
 
-async function recordRetailSale(productId: number, qty: number): Promise<void> {
-  const tx: InventoryTransactionInsert = {
-    product_id: productId,
-    transaction_type: 'sold',
+// Set exact retail sold quantity (handles corrections)
+async function setRetailQty(productId: number, qty: number): Promise<void> {
+  const res = await inventoryService.setSoldQuantity({
+    productId,
+    date: AppState.getDate(),
+    saleType: 'retail',
     quantity: qty,
-    transaction_date: AppState.getDate(),
-    sale_type: 'retail',
-  };
-
-  const res = await inventoryService.recordTransaction(tx);
+  });
   if (res.error) {
     showToast(res.error.displayMessage);
     return;
   }
-
-  showToast('+1 sold');
-  await renderProducts();
+  showToast('Updated');
 }

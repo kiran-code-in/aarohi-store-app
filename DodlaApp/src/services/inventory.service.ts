@@ -11,7 +11,11 @@
 
 import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
-import { ServiceResult, ApiError, failure } from '@/lib/error-handler';
+import { ServiceResult, ApiError, failure, success } from '@/lib/error-handler';
+import {
+  isDemoMode, DEMO_PRODUCTS, DEMO_CATEGORIES,
+  loadDemoTxns, saveDemoTxns, nextTxId,
+} from '@/lib/demo-data';
 import type {
   InventoryTransaction,
   InventoryTransactionInsert,
@@ -31,6 +35,24 @@ class InventoryService extends BaseService {
     // ── Validate business rules ──
     const validation = this.validateTransaction(tx);
     if (validation) return failure<InventoryTransaction>(validation);
+
+    if (isDemoMode()) {
+      const txns = loadDemoTxns();
+      const newTx: InventoryTransaction = {
+        id: nextTxId(),
+        product_id: tx.product_id,
+        transaction_type: tx.transaction_type,
+        quantity: tx.quantity,
+        remarks: tx.remarks ?? null,
+        transaction_date: tx.transaction_date,
+        created_at: new Date().toISOString(),
+        sale_type: tx.transaction_type === 'sold' ? (tx.sale_type ?? null) : null,
+        customer_id: tx.transaction_type === 'sold' ? (tx.customer_id ?? null) : null,
+      };
+      txns.push(newTx);
+      saveDemoTxns(txns);
+      return success(newTx);
+    }
 
     // Normalize: set sale_type and customer_id to null for non-sold transactions
     const normalized: InventoryTransactionInsert = { ...tx };
@@ -79,8 +101,156 @@ class InventoryService extends BaseService {
     );
   }
 
+  /**
+   * Set the exact sold quantity for a product on a date for a given sale type/customer.
+   * Deletes existing matching 'sold' transactions and inserts one with the new quantity.
+   * Used for correcting mistakes. qty=0 removes the entry entirely.
+   */
+  async setSoldQuantity(params: {
+    productId: number;
+    date: string;
+    saleType: 'wholesale' | 'retail';
+    customerId?: string | null;
+    quantity: number;
+  }): Promise<ServiceResult<boolean>> {
+    if (isDemoMode()) {
+      let txns = loadDemoTxns();
+      // Remove matching sold entries
+      txns = txns.filter(t => !(
+        t.product_id === params.productId &&
+        t.transaction_date === params.date &&
+        t.transaction_type === 'sold' &&
+        t.sale_type === params.saleType &&
+        (params.saleType === 'wholesale' ? t.customer_id === params.customerId : !t.customer_id)
+      ));
+      if (params.quantity > 0) {
+        txns.push({
+          id: nextTxId(), product_id: params.productId, transaction_type: 'sold',
+          quantity: params.quantity, remarks: null, transaction_date: params.date,
+          created_at: new Date().toISOString(), sale_type: params.saleType,
+          customer_id: params.saleType === 'wholesale' ? (params.customerId ?? null) : null,
+        });
+      }
+      saveDemoTxns(txns);
+      return success(true);
+    }
+    return this.execute<boolean>(async () => {
+      // Delete existing matching transactions
+      let del = supabase
+        .from('inventory_transactions')
+        .delete()
+        .eq('product_id', params.productId)
+        .eq('transaction_date', params.date)
+        .eq('transaction_type', 'sold')
+        .eq('sale_type', params.saleType);
+
+      if (params.saleType === 'wholesale' && params.customerId) {
+        del = del.eq('customer_id', params.customerId);
+      } else {
+        del = del.is('customer_id', null);
+      }
+
+      const { error: delErr } = await del;
+      if (delErr) throw delErr;
+
+      // Insert new one if quantity > 0
+      if (params.quantity > 0) {
+        const { error: insErr } = await supabase
+          .from('inventory_transactions')
+          .insert({
+            product_id: params.productId,
+            transaction_type: 'sold',
+            quantity: params.quantity,
+            transaction_date: params.date,
+            sale_type: params.saleType,
+            customer_id: params.saleType === 'wholesale' ? params.customerId : null,
+          });
+        if (insErr) throw insErr;
+      }
+
+      return true;
+    }, 'setSoldQuantity');
+  }
+
+  /**
+   * Set exact received/damaged quantity for a product on a date.
+   */
+  async setStockQuantity(params: {
+    productId: number;
+    date: string;
+    type: 'received' | 'damaged';
+    quantity: number;
+  }): Promise<ServiceResult<boolean>> {
+    if (isDemoMode()) {
+      let txns = loadDemoTxns();
+      txns = txns.filter(t => !(
+        t.product_id === params.productId &&
+        t.transaction_date === params.date &&
+        t.transaction_type === params.type
+      ));
+      if (params.quantity > 0) {
+        txns.push({
+          id: nextTxId(), product_id: params.productId, transaction_type: params.type,
+          quantity: params.quantity, remarks: null, transaction_date: params.date,
+          created_at: new Date().toISOString(), sale_type: null, customer_id: null,
+        });
+      }
+      saveDemoTxns(txns);
+      return success(true);
+    }
+    return this.execute<boolean>(async () => {
+      const { error: delErr } = await supabase
+        .from('inventory_transactions')
+        .delete()
+        .eq('product_id', params.productId)
+        .eq('transaction_date', params.date)
+        .eq('transaction_type', params.type);
+      if (delErr) throw delErr;
+
+      if (params.quantity > 0) {
+        const { error: insErr } = await supabase
+          .from('inventory_transactions')
+          .insert({
+            product_id: params.productId,
+            transaction_type: params.type,
+            quantity: params.quantity,
+            transaction_date: params.date,
+          });
+        if (insErr) throw insErr;
+      }
+      return true;
+    }, 'setStockQuantity');
+  }
+
+  /** Delete a single transaction by ID */
+  async deleteTransaction(id: number): Promise<ServiceResult<boolean>> {
+    return this.execute<boolean>(async () => {
+      const { error } = await supabase
+        .from('inventory_transactions')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    }, 'deleteTransaction');
+  }
+
+  /** Reassign a wholesale transaction to a different customer */
+  async reassignCustomer(transactionId: number, newCustomerId: string): Promise<ServiceResult<boolean>> {
+    return this.execute<boolean>(async () => {
+      const { error } = await supabase
+        .from('inventory_transactions')
+        .update({ customer_id: newCustomerId })
+        .eq('id', transactionId);
+      if (error) throw error;
+      return true;
+    }, 'reassignCustomer');
+  }
+
   /** Get all transactions for a specific date */
   async getDailyTransactions(date: string): Promise<ServiceResult<InventoryTransaction[]>> {
+    if (isDemoMode()) {
+      return success(loadDemoTxns().filter(t => t.transaction_date === date));
+    }
     return this.query<InventoryTransaction[]>(
       () => supabase
         .from('inventory_transactions')
@@ -128,6 +298,30 @@ class InventoryService extends BaseService {
    * Returns received, sold, damaged totals per product.
    */
   async getDailySummary(date: string): Promise<ServiceResult<DailyProductSummary[]>> {
+    if (isDemoMode()) {
+      const txns = loadDemoTxns().filter(t => t.transaction_date === date);
+      const txMap = new Map<number, { received: number; sold: number; damaged: number }>();
+      for (const t of txns) {
+        if (!t.product_id) continue;
+        if (!txMap.has(t.product_id)) txMap.set(t.product_id, { received: 0, sold: 0, damaged: 0 });
+        const e = txMap.get(t.product_id)!;
+        e[t.transaction_type as TransactionType] += t.quantity;
+      }
+      const summary: DailyProductSummary[] = DEMO_PRODUCTS.map(p => {
+        const agg = txMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+        return {
+          product_id: p.id,
+          product_name: p.product_name,
+          category_name: DEMO_CATEGORIES.find(c => c.id === p.category_id)?.name ?? 'Other',
+          received: agg.received, sold: agg.sold, damaged: agg.damaged,
+          available: agg.received - agg.sold - agg.damaged,
+          purchase_price: p.purchase_price ?? 0,
+          retail_price: p.retail_price ?? 0,
+          wholesale_price: p.wholesale_price ?? 0,
+        };
+      });
+      return success(summary);
+    }
     return this.execute<DailyProductSummary[]>(async () => {
       // Fetch all transactions for the date
       const { data: transactions, error: txError } = await supabase

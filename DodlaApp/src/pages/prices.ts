@@ -8,11 +8,11 @@ import { showToast } from '@/components/toast';
 export async function renderPrices(): Promise<void> {
   const tbody = document.getElementById('priceTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">Loading...</td></tr>';
 
   const prodRes = await productService.getActive();
   if (!prodRes.data) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Failed to load</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">Failed to load</td></tr>';
     return;
   }
 
@@ -26,7 +26,7 @@ export async function renderPrices(): Promise<void> {
       currentCat = catName;
       currentType = '';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4" class="text-[10px] font-bold uppercase tracking-wider text-primary pt-4 pb-1 border-b border-primary/20">${catName}</td>`;
+      tr.innerHTML = `<td colspan="4" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#0F766E;padding:14px 8px 4px">${catName}</td>`;
       tbody.appendChild(tr);
     }
 
@@ -35,13 +35,13 @@ export async function renderPrices(): Promise<void> {
     if (pType && pType !== currentType) {
       currentType = pType;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4" class="text-[10px] font-semibold text-muted pt-2 pb-0.5 pl-2">— ${pType}</td>`;
+      tr.innerHTML = `<td colspan="4" style="font-size:10px;font-weight:600;color:#94A3B8;padding:6px 8px 2px 12px">${pType}</td>`;
       tbody.appendChild(tr);
     }
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="font-semibold text-body">${p.product_name}</td>
+      <td style="font-weight:600;font-size:13px;color:#0F172A">${p.product_name}</td>
       <td><input type="number" data-id="${p.id}" data-field="purchase_price" value="${p.purchase_price ?? 0}" step="0.5" /></td>
       <td><input type="number" data-id="${p.id}" data-field="retail_price" value="${p.retail_price ?? 0}" step="0.5" /></td>
       <td><input type="number" data-id="${p.id}" data-field="wholesale_price" value="${p.wholesale_price ?? 0}" step="0.5" /></td>
@@ -72,7 +72,7 @@ async function renderPriceHistory(): Promise<void> {
   if (!list) return;
   const res = await priceService.getAllPriceHistory(15);
   if (!res.data || res.data.length === 0) {
-    list.innerHTML = '<div class="text-caption text-muted py-3">No changes yet</div>';
+    list.innerHTML = '<div style="color:#94A3B8;font-size:13px;padding:12px 0">No changes yet</div>';
     return;
   }
   const prodRes = await productService.getAll();
@@ -80,10 +80,10 @@ async function renderPriceHistory(): Promise<void> {
   if (prodRes.data) prodRes.data.forEach(p => map.set(p.id, p.product_name));
 
   list.innerHTML = res.data.map(e => `
-    <div class="flex items-center justify-between py-1.5 border-b border-slate-100 text-caption">
-      <span class="text-muted w-16">${e.effective_date || ''}</span>
-      <span class="font-semibold flex-1">${map.get(e.product_id ?? 0) || '?'}</span>
-      <span class="font-bold text-primary">₹${e.retail_price ?? 0}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
+      <span style="color:#94A3B8;width:70px">${e.effective_date || ''}</span>
+      <span style="font-weight:600;flex:1;color:#334155">${map.get(e.product_id ?? 0) || '?'}</span>
+      <span style="font-weight:700;color:#0F766E">₹${e.retail_price ?? 0}</span>
     </div>
   `).join('');
 }
