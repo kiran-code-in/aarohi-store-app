@@ -299,7 +299,8 @@ class InventoryService extends BaseService {
    */
   async getDailySummary(date: string): Promise<ServiceResult<DailyProductSummary[]>> {
     if (isDemoMode()) {
-      const txns = loadDemoTxns().filter(t => t.transaction_date === date);
+      const all = loadDemoTxns();
+      const txns = all.filter(t => t.transaction_date === date);
       const txMap = new Map<number, { received: number; sold: number; damaged: number }>();
       for (const t of txns) {
         if (!t.product_id) continue;
@@ -307,14 +308,25 @@ class InventoryService extends BaseService {
         const e = txMap.get(t.product_id)!;
         e[t.transaction_type as TransactionType] += t.quantity;
       }
+      // Pending = leftover from the PREVIOUS DAY only (that day's net stock).
+      const prevDate = this.previousDay(date);
+      const pendingMap = new Map<number, number>();
+      for (const t of all) {
+        if (!t.product_id || t.transaction_date !== prevDate) continue;
+        const cur = pendingMap.get(t.product_id) ?? 0;
+        const delta = t.transaction_type === 'received' ? t.quantity : -t.quantity;
+        pendingMap.set(t.product_id, cur + delta);
+      }
       const summary: DailyProductSummary[] = DEMO_PRODUCTS.map(p => {
         const agg = txMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+        const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
           product_name: p.product_name,
           category_name: DEMO_CATEGORIES.find(c => c.id === p.category_id)?.name ?? 'Other',
+          pending,
           received: agg.received, sold: agg.sold, damaged: agg.damaged,
-          available: agg.received - agg.sold - agg.damaged,
+          available: pending + agg.received - agg.sold - agg.damaged,
           purchase_price: p.purchase_price ?? 0,
           retail_price: p.retail_price ?? 0,
           wholesale_price: p.wholesale_price ?? 0,
@@ -330,6 +342,15 @@ class InventoryService extends BaseService {
         .eq('transaction_date', date);
 
       if (txError) throw txError;
+
+      // Pending = leftover from the PREVIOUS DAY only (that day's net stock).
+      const prevDate = this.previousDay(date);
+      const { data: priorTx, error: priorErr } = await supabase
+        .from('inventory_transactions')
+        .select('product_id, transaction_type, quantity')
+        .eq('transaction_date', prevDate);
+
+      if (priorErr) throw priorErr;
 
       // Fetch all active products with prices and category
       const { data: products, error: prodError } = await supabase
@@ -353,17 +374,28 @@ class InventoryService extends BaseService {
         entry[type] += tx.quantity;
       }
 
+      // Net of the previous day's transactions = what was left over that day.
+      const pendingMap = new Map<number, number>();
+      for (const tx of priorTx || []) {
+        if (!tx.product_id) continue;
+        const cur = pendingMap.get(tx.product_id) ?? 0;
+        const delta = tx.transaction_type === 'received' ? tx.quantity : -tx.quantity;
+        pendingMap.set(tx.product_id, cur + delta);
+      }
+
       // Build summary
       const summary: DailyProductSummary[] = (products || []).map(p => {
         const agg = txMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+        const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
           product_name: p.product_name,
           category_name: (p.categories as unknown as { name: string })?.name ?? 'Uncategorized',
+          pending,
           received: agg.received,
           sold: agg.sold,
           damaged: agg.damaged,
-          available: agg.received - agg.sold - agg.damaged, // simplified; real app may carry forward
+          available: pending + agg.received - agg.sold - agg.damaged,
           purchase_price: p.purchase_price ?? 0,
           retail_price: p.retail_price ?? 0,
           wholesale_price: p.wholesale_price ?? 0,
@@ -434,6 +466,16 @@ class InventoryService extends BaseService {
   }
 
   // ── Private helpers ──
+
+  /** Return the calendar day before an ISO date string (YYYY-MM-DD). */
+  private previousDay(date: string): string {
+    const [y, m, d] = date.split('-').map(Number);
+    const dt = new Date(y, m - 1, d - 1);
+    const yy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
 
   private validateTransaction(tx: InventoryTransactionInsert): ApiError | null {
     if (tx.quantity <= 0) {

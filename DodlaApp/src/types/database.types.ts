@@ -183,10 +183,11 @@ export interface DailyProductSummary {
   product_id: number;
   product_name: string;
   category_name: string;
+  pending: number;  // opening balance carried from prior days (SUM received - sold - damaged where date < today, floored at 0)
   received: number;
   sold: number;
   damaged: number;
-  available: number; // calculated: previous_available + received - sold - damaged
+  available: number; // calculated: pending + received - sold - damaged
   purchase_price: number;
   retail_price: number;
   wholesale_price: number;

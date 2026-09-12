@@ -78,7 +78,9 @@ async function renderDashboard(): Promise<void> {
   // Low stock alerts
   const lowDiv = document.getElementById('dashLowStock');
   if (lowDiv) {
-    const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.received > 0 || p.sold > 0));
+    // Flag anything low on true (carry-forward) available stock — but only
+    // products that have ever had activity (pending, received or sold today).
+    const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.pending > 0 || p.received > 0 || p.sold > 0));
     lowDiv.innerHTML = low.length === 0
       ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">All items well stocked</div>'
       : low.map(p => `

@@ -6,11 +6,12 @@
 import { AppState } from '@/lib/state';
 import { categoryService, productService, inventoryService } from '@/services';
 import { showToast } from '@/components/toast';
-import type { Category, Product, InventoryTransactionInsert } from '@/types/database.types';
+import type { Category, Product } from '@/types/database.types';
 
 let categories: Category[] = [];
 let products: Product[] = [];
 let activeCategory: Category | null = null;
+let listenersBound = false;
 
 export async function renderInventory(): Promise<void> {
   if (categories.length === 0) {
@@ -18,8 +19,45 @@ export async function renderInventory(): Promise<void> {
     if (res.data) categories = res.data;
   }
 
+  bindStockListeners();
   renderCategoryTabs();
   await renderProducts();
+}
+
+// Bind list event listeners ONCE. Previously these were attached inside
+// renderProducts(), so every category switch / re-render stacked another
+// duplicate listener on the same #stockList element — causing a single
+// edit to fire setReceived multiple times and the quantity to keep growing.
+function bindStockListeners(): void {
+  if (listenersBound) return;
+  const list = document.getElementById('stockList');
+  if (!list) return;
+  listenersBound = true;
+
+  // +/- buttons — adjust the input then save the exact value
+  list.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const productId = parseInt(btn.dataset.id!);
+    const input = list.querySelector<HTMLInputElement>(`.stock-input[data-id="${productId}"]`);
+    if (!input) return;
+    let val = parseInt(input.value) || 0;
+    val = btn.dataset.action === 'plus' ? val + 1 : Math.max(0, val - 1);
+    input.value = String(val);
+    setReceived(productId, val);
+  });
+
+  // Direct input edit — save the EXACT value the moment the field loses
+  // focus (change fires on blur / Enter). This is the "went back" moment,
+  // so the typed value is always persisted before navigating away.
+  list.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.classList.contains('stock-input')) return;
+    const productId = parseInt(target.dataset.id!);
+    const qty = Math.max(0, parseInt(target.value) || 0);
+    target.value = String(qty);
+    setReceived(productId, qty);
+  });
 }
 
 function renderCategoryTabs(): void {
@@ -59,7 +97,7 @@ async function renderProducts(): Promise<void> {
   // Fetch today's summary
   const date = AppState.getDate();
   const summaryRes = await inventoryService.getDailySummary(date);
-  const summaryMap = new Map<number, { received: number; sold: number; damaged: number }>();
+  const summaryMap = new Map<number, { pending: number; received: number; sold: number; damaged: number; available: number }>();
   if (summaryRes.data) {
     summaryRes.data.forEach(s => summaryMap.set(s.product_id, s));
   }
@@ -79,50 +117,44 @@ async function renderProducts(): Promise<void> {
       list.appendChild(header);
     }
 
-    const agg = summaryMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+    const agg = summaryMap.get(p.id) || { pending: 0, received: 0, sold: 0, damaged: 0, available: 0 };
 
     const card = document.createElement('div');
     card.className = 'product-row';
     card.innerHTML = `
       <div class="info">
         <span class="name">${p.product_name}</span>
-        <span class="meta">Received: ${agg.received}</span>
+        <span class="meta" data-meta="${p.id}">${metaText(agg.pending ?? 0)}</span>
       </div>
-      <div class="actions">
+      <div class="actions" style="display:flex;align-items:center;gap:8px">
+        <button data-action="minus" data-id="${p.id}"
+          style="width:34px;height:34px;border-radius:9px;border:1.5px solid #E2E8F0;background:#fff;font-size:18px;font-weight:700;color:#64748B;cursor:pointer">−</button>
         <input type="number" class="stock-input" data-id="${p.id}" value="${agg.received}" min="0" inputmode="numeric" />
+        <button data-action="plus" data-id="${p.id}"
+          style="width:34px;height:34px;border-radius:9px;border:1.5px solid #0F766E;background:#0F766E;font-size:18px;font-weight:700;color:#fff;cursor:pointer">+</button>
       </div>
     `;
     list.appendChild(card);
   });
-
-  // Event delegation — input change for received quantity
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  list.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    if (!target.classList.contains('stock-input')) return;
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      const productId = parseInt(target.dataset.id!);
-      const qty = Math.max(0, parseInt(target.value) || 0);
-      if (qty > 0) recordReceived(productId, qty);
-    }, 800);
-  });
 }
 
-async function recordReceived(productId: number, qty: number): Promise<void> {
-  const tx: InventoryTransactionInsert = {
-    product_id: productId,
-    transaction_type: 'received',
-    quantity: qty,
-    transaction_date: AppState.getDate(),
-  };
+// The meta line shows ONLY the leftover carried in from the previous day.
+// Today's received is what you type in the input — we don't mix them here.
+function metaText(pending: number): string {
+  return pending > 0 ? `Previous day left: ${pending}` : 'No previous stock';
+}
 
-  const res = await inventoryService.recordTransaction(tx);
+// Set the EXACT received quantity for today (replaces, never adds)
+async function setReceived(productId: number, qty: number): Promise<void> {
+  const res = await inventoryService.setStockQuantity({
+    productId,
+    date: AppState.getDate(),
+    type: 'received',
+    quantity: qty,
+  });
   if (res.error) {
     showToast(res.error.displayMessage);
     return;
   }
-
-  showToast('+1 received');
-  await renderProducts();
+  showToast('Stock updated');
 }
