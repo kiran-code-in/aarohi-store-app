@@ -10,7 +10,9 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../docs',
+    // Build output is uploaded to GitHub Pages by the Actions workflow
+    // (.github/workflows/deploy.yml). No need to commit it anymore.
+    outDir: 'dist',
     emptyOutDir: true,
     sourcemap: true,
   },

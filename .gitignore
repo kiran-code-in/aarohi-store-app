@@ -17,3 +17,7 @@ extract.ps1
 node_modules/
 .env
 dist/
+
+# Build output — now published by GitHub Actions, no longer committed
+docs/
+DodlaApp/docs/
