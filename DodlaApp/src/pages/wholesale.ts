@@ -97,11 +97,6 @@ async function renderCustomerCards(): Promise<void> {
   if (!list) return;
   list.innerHTML = '';
 
-  if (todayCustomers.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:24px 16px;font-size:13px">Tap a customer above to start recording their order.</div>';
-    return;
-  }
-
   // Fetch today's transactions to show existing quantities
   const date = AppState.getDate();
   const txRes = await inventoryService.getDailyTransactions(date);
@@ -114,6 +109,20 @@ async function renderCustomerCards(): Promise<void> {
         const map = txByCustomer.get(tx.customer_id!)!;
         map.set(tx.product_id!, (map.get(tx.product_id!) || 0) + tx.quantity);
       });
+  }
+
+  // Auto-show any customer who already took wholesale stock today, without
+  // needing a tap. Merge them into the session list (existing tapped
+  // customers stay). This is how dad sees "who took stock today".
+  txByCustomer.forEach((_, custId) => {
+    if (todayCustomers.some(c => c.id === custId)) return;
+    const cust = customers.find(c => c.id === custId);
+    if (cust) todayCustomers.push(cust);
+  });
+
+  if (todayCustomers.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:24px 16px;font-size:13px">Tap a customer above to start recording their order.</div>';
+    return;
   }
 
   const prices = await priceService.getAllCurrentPrices();

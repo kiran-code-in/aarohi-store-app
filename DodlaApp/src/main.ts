@@ -14,7 +14,7 @@ import { renderRetail } from './pages/retail';
 import { initScan, initScanEvents, stopCamera } from './pages/scan';
 import { renderHistory } from './pages/history';
 import { renderPrices } from './pages/prices';
-import { inventoryService } from './services';
+import { inventoryService, customerNotesService } from './services';
 
 type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices';
 
@@ -88,6 +88,28 @@ async function renderDashboard(): Promise<void> {
             <div class="info"><span class="name">${p.product_name}</span></div>
             <span style="font-size:13px;font-weight:700;color:#DC2626">${p.available} left</span>
           </div>`).join('');
+  }
+
+  // Balances due — who needs to pay, most owed first
+  const balDiv = document.getElementById('dashBalances');
+  if (balDiv) {
+    const balRes = await customerNotesService.getAllBalances();
+    const owing = (balRes.data || []).filter(b => b.balance > 0);
+    if (owing.length === 0) {
+      balDiv.innerHTML = '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">No outstanding balances</div>';
+    } else {
+      const totalDue = owing.reduce((a, b) => a + b.balance, 0);
+      balDiv.innerHTML = `
+        <div class="product-row" style="background:#FEF2F2">
+          <div class="info"><span class="name" style="color:#991B1B">Total outstanding</span></div>
+          <span style="font-size:15px;font-weight:800;color:#DC2626">${formatCurrency(totalDue)}</span>
+        </div>
+        ${owing.map(b => `
+          <div class="product-row">
+            <div class="info"><span class="name">${b.customer_name}</span></div>
+            <span style="font-size:14px;font-weight:800;color:#DC2626">${formatCurrency(b.balance)}</span>
+          </div>`).join('')}`;
+    }
   }
 }
 
