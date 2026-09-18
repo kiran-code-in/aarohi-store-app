@@ -301,12 +301,20 @@ class InventoryService extends BaseService {
     if (isDemoMode()) {
       const all = loadDemoTxns();
       const txns = all.filter(t => t.transaction_date === date);
-      const txMap = new Map<number, { received: number; sold: number; damaged: number }>();
+      const txMap = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number; damaged: number }>();
       for (const t of txns) {
         if (!t.product_id) continue;
-        if (!txMap.has(t.product_id)) txMap.set(t.product_id, { received: 0, sold: 0, damaged: 0 });
+        if (!txMap.has(t.product_id)) txMap.set(t.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 });
         const e = txMap.get(t.product_id)!;
-        e[t.transaction_type as TransactionType] += t.quantity;
+        if (t.transaction_type === 'sold') {
+          e.sold += t.quantity;
+          if (t.sale_type === 'wholesale') e.sold_wholesale += t.quantity;
+          else e.sold_retail += t.quantity;
+        } else if (t.transaction_type === 'received') {
+          e.received += t.quantity;
+        } else if (t.transaction_type === 'damaged') {
+          e.damaged += t.quantity;
+        }
       }
       // Pending = leftover from the PREVIOUS DAY only (that day's net stock).
       const prevDate = this.previousDay(date);
@@ -318,14 +326,16 @@ class InventoryService extends BaseService {
         pendingMap.set(t.product_id, cur + delta);
       }
       const summary: DailyProductSummary[] = DEMO_PRODUCTS.map(p => {
-        const agg = txMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+        const agg = txMap.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 };
         const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
           product_name: p.product_name,
           category_name: DEMO_CATEGORIES.find(c => c.id === p.category_id)?.name ?? 'Other',
           pending,
-          received: agg.received, sold: agg.sold, damaged: agg.damaged,
+          received: agg.received, sold: agg.sold,
+          sold_retail: agg.sold_retail, sold_wholesale: agg.sold_wholesale,
+          damaged: agg.damaged,
           available: pending + agg.received - agg.sold - agg.damaged,
           purchase_price: p.purchase_price ?? 0,
           retail_price: p.retail_price ?? 0,
@@ -338,7 +348,7 @@ class InventoryService extends BaseService {
       // Fetch all transactions for the date
       const { data: transactions, error: txError } = await supabase
         .from('inventory_transactions')
-        .select('product_id, transaction_type, quantity')
+        .select('product_id, transaction_type, quantity, sale_type')
         .eq('transaction_date', date);
 
       if (txError) throw txError;
@@ -362,16 +372,23 @@ class InventoryService extends BaseService {
 
       if (prodError) throw prodError;
 
-      // Aggregate transactions per product
-      const txMap = new Map<number, { received: number; sold: number; damaged: number }>();
+      // Aggregate transactions per product, splitting sold by sale type
+      const txMap = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number; damaged: number }>();
       for (const tx of transactions || []) {
         if (!tx.product_id) continue;
         if (!txMap.has(tx.product_id)) {
-          txMap.set(tx.product_id, { received: 0, sold: 0, damaged: 0 });
+          txMap.set(tx.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 });
         }
         const entry = txMap.get(tx.product_id)!;
-        const type = tx.transaction_type as TransactionType;
-        entry[type] += tx.quantity;
+        if (tx.transaction_type === 'sold') {
+          entry.sold += tx.quantity;
+          if (tx.sale_type === 'wholesale') entry.sold_wholesale += tx.quantity;
+          else entry.sold_retail += tx.quantity;
+        } else if (tx.transaction_type === 'received') {
+          entry.received += tx.quantity;
+        } else if (tx.transaction_type === 'damaged') {
+          entry.damaged += tx.quantity;
+        }
       }
 
       // Net of the previous day's transactions = what was left over that day.
@@ -385,7 +402,7 @@ class InventoryService extends BaseService {
 
       // Build summary
       const summary: DailyProductSummary[] = (products || []).map(p => {
-        const agg = txMap.get(p.id) || { received: 0, sold: 0, damaged: 0 };
+        const agg = txMap.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 };
         const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
@@ -394,6 +411,8 @@ class InventoryService extends BaseService {
           pending,
           received: agg.received,
           sold: agg.sold,
+          sold_retail: agg.sold_retail,
+          sold_wholesale: agg.sold_wholesale,
           damaged: agg.damaged,
           available: pending + agg.received - agg.sold - agg.damaged,
           purchase_price: p.purchase_price ?? 0,
@@ -446,9 +465,9 @@ class InventoryService extends BaseService {
       let totalDamagedLoss = 0;
 
       for (const p of products) {
-        // Revenue: sold qty × retail price (simplified — wholesale tracked separately)
-        totalRevenue += p.sold * p.retail_price;
-        // Cost: sold qty × purchase price
+        // Revenue: retail units × retail price + wholesale units × wholesale price
+        totalRevenue += p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
+        // Cost: all sold units × purchase price
         totalCost += p.sold * p.purchase_price;
         // Damaged loss: damaged qty × purchase price
         totalDamagedLoss += p.damaged * p.purchase_price;

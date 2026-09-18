@@ -40,7 +40,7 @@ export async function renderHistory(): Promise<void> {
           <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
             <span style="color:#334155;font-weight:600;flex:1">${p.product_name}</span>
             <span style="color:#94A3B8;font-size:11px">R:${p.received} · S:${p.sold} · D:${p.damaged}</span>
-            <span style="font-weight:700;color:#0F766E;width:64px;text-align:right">${formatCurrency(p.sold * p.retail_price)}</span>
+            <span style="font-weight:700;color:#0F766E;width:64px;text-align:right">${formatCurrency(p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price)}</span>
           </div>
         `).join('')}
         <div style="display:flex;justify-content:space-between;padding-top:8px;margin-top:4px;border-top:1px solid #F1F5F9;font-size:14px;font-weight:800">

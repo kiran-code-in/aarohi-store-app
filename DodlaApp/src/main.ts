@@ -65,17 +65,24 @@ async function renderDashboard(): Promise<void> {
   // Today's top sellers
   const salesDiv = document.getElementById('dashTodaySales');
   if (salesDiv) {
-    const sold = s.products.filter(p => p.sold > 0).sort((a, b) => b.sold - a.sold).slice(0, 6);
+    const sold = s.products.filter(p => p.sold > 0).sort((a, b) => b.sold - a.sold);
     salesDiv.innerHTML = sold.length === 0
       ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">No sales recorded yet today</div>'
-      : sold.map(p => `
+      : sold.map(p => {
+          // Correct value: retail units at retail price + wholesale units at wholesale price
+          const value = p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
+          const breakdown = p.sold_wholesale > 0
+            ? `${p.sold} sold (${p.sold_retail} retail, ${p.sold_wholesale} wholesale)`
+            : `${p.sold} sold`;
+          return `
           <div class="product-row">
             <div class="info">
               <span class="name">${p.product_name}</span>
-              <span class="meta">${p.sold} sold</span>
+              <span class="meta">${breakdown}</span>
             </div>
-            <span style="font-size:15px;font-weight:800;color:#0F766E">${formatCurrency(p.sold * p.retail_price)}</span>
-          </div>`).join('');
+            <span style="font-size:15px;font-weight:800;color:#0F766E">${formatCurrency(value)}</span>
+          </div>`;
+        }).join('');
   }
 
   // Low stock alerts

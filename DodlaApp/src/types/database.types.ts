@@ -185,7 +185,9 @@ export interface DailyProductSummary {
   category_name: string;
   pending: number;  // opening balance carried from prior days (SUM received - sold - damaged where date < today, floored at 0)
   received: number;
-  sold: number;
+  sold: number;           // total sold (retail + wholesale)
+  sold_retail: number;    // units sold at retail price
+  sold_wholesale: number; // units sold at wholesale price
   damaged: number;
   available: number; // calculated: pending + received - sold - damaged
   purchase_price: number;
