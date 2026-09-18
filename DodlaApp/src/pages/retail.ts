@@ -10,6 +10,7 @@ import type { Category } from '@/types/database.types';
 
 let categories: Category[] = [];
 let activeCategory: Category | null = null;
+let listenersBound = false;
 
 export async function renderRetail(): Promise<void> {
   if (categories.length === 0) {
@@ -17,8 +18,44 @@ export async function renderRetail(): Promise<void> {
     if (res.data) categories = res.data;
   }
 
+  bindSalesListeners();
   renderCategoryTabs();
   await renderProducts();
+}
+
+// Bind list listeners ONCE. Previously they were attached inside
+// renderProducts(), so every category switch stacked another duplicate on
+// the same #salesList element — one edit fired setRetailQty multiple times
+// and the quantity kept climbing (same bug the Stock In page had).
+function bindSalesListeners(): void {
+  if (listenersBound) return;
+  const list = document.getElementById('salesList');
+  if (!list) return;
+  listenersBound = true;
+
+  // +/- buttons — adjust the input then save the exact value
+  list.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const productId = parseInt(btn.dataset.id!);
+    const input = list.querySelector<HTMLInputElement>(`.retail-input[data-id="${productId}"]`);
+    if (!input) return;
+    let val = parseInt(input.value) || 0;
+    val = btn.dataset.action === 'plus' ? val + 1 : Math.max(0, val - 1);
+    input.value = String(val);
+    setRetailQty(productId, val);
+  });
+
+  // Direct edit — save the EXACT value when the field loses focus (blur /
+  // Enter). Only the final value is saved, never mid-typing empty states.
+  list.addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.classList.contains('retail-input')) return;
+    const productId = parseInt(input.dataset.id!);
+    const qty = Math.max(0, parseInt(input.value) || 0);
+    input.value = String(qty);
+    setRetailQty(productId, qty);
+  });
 }
 
 function renderCategoryTabs(): void {
@@ -106,31 +143,6 @@ async function renderProducts(): Promise<void> {
       </div>
     `;
     list.appendChild(card);
-  });
-
-  // +/- buttons
-  list.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
-    if (!btn) return;
-    const productId = parseInt(btn.dataset.id!);
-    const input = list.querySelector<HTMLInputElement>(`.retail-input[data-id="${productId}"]`);
-    if (!input) return;
-    let val = parseInt(input.value) || 0;
-    val = btn.dataset.action === 'plus' ? val + 1 : Math.max(0, val - 1);
-    input.value = String(val);
-    setRetailQty(productId, val);
-  });
-
-  // Direct input edit (correction)
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  list.addEventListener('input', (e) => {
-    const input = e.target as HTMLInputElement;
-    if (!input.classList.contains('retail-input')) return;
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      const productId = parseInt(input.dataset.id!);
-      setRetailQty(productId, Math.max(0, parseInt(input.value) || 0));
-    }, 700);
   });
 }
 

@@ -13,6 +13,7 @@ import type { Customer, Product } from '@/types/database.types';
 let customers: Customer[] = [];
 let products: Product[] = [];
 let todayCustomers: Customer[] = []; // customers added for today's session
+let wsSaveBound = false;
 
 export async function renderWholesale(): Promise<void> {
   // Load all customers
@@ -185,23 +186,28 @@ async function renderCustomerCards(): Promise<void> {
     });
   });
 
-  // Input change — record wholesale sale
-  list.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    if (!target.classList.contains('ws-qty-input')) return;
-    debounceWholesaleSave(target);
-  });
+  bindWholesaleSave();
 }
 
-let _wsTimer: ReturnType<typeof setTimeout> | null = null;
-function debounceWholesaleSave(input: HTMLInputElement): void {
-  if (_wsTimer) clearTimeout(_wsTimer);
-  _wsTimer = setTimeout(async () => {
+// Bind the quantity-save listener ONCE on the persistent list element.
+// Previously this was inside renderCustomerCards(), so every customer
+// add/toggle stacked another listener and fired redundant saves. Uses
+// `change` (blur) so only the final typed value is saved, not mid-typing.
+function bindWholesaleSave(): void {
+  if (wsSaveBound) return;
+  const list = document.getElementById('wholesaleCustomerList');
+  if (!list) return;
+  wsSaveBound = true;
+
+  list.addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    if (!input.classList.contains('ws-qty-input')) return;
     const customerId = input.dataset.custid!;
     const productId = parseInt(input.dataset.pid!);
     const qty = Math.max(0, parseInt(input.value) || 0);
+    input.value = qty ? String(qty) : '';
 
-    // setSoldQuantity handles exact value — including 0 to clear a mistake
+    // setSoldQuantity sets the EXACT value — including 0 to clear a mistake
     const res = await inventoryService.setSoldQuantity({
       productId,
       date: AppState.getDate(),
@@ -214,7 +220,7 @@ function debounceWholesaleSave(input: HTMLInputElement): void {
     } else {
       showToast('Saved');
     }
-  }, 800);
+  });
 }
 
 export function initWholesaleModal(): void {
