@@ -12,6 +12,9 @@ let categories: Category[] = [];
 let products: Product[] = [];
 let activeCategory: Category | null = null;
 let listenersBound = false;
+// Latest per-product summary so we can refresh the "Available" label in place
+// after an edit without re-rendering the whole list.
+let lastSummary = new Map<number, { pending: number; received: number; sold: number; damaged: number; available: number }>();
 
 export async function renderInventory(): Promise<void> {
   if (categories.length === 0) {
@@ -101,6 +104,7 @@ async function renderProducts(): Promise<void> {
   if (summaryRes.data) {
     summaryRes.data.forEach(s => summaryMap.set(s.product_id, s));
   }
+  lastSummary = summaryMap;
 
   // Render product cards
   list.innerHTML = '';
@@ -124,7 +128,7 @@ async function renderProducts(): Promise<void> {
     card.innerHTML = `
       <div class="info">
         <span class="name">${p.product_name}</span>
-        <span class="meta" data-meta="${p.id}">${metaText(agg.pending ?? 0)}</span>
+        <span class="meta" data-meta="${p.id}">${metaText(agg.pending ?? 0, agg.available ?? 0)}</span>
       </div>
       <div class="actions" style="display:flex;align-items:center;gap:8px">
         <button data-action="minus" data-id="${p.id}"
@@ -138,10 +142,11 @@ async function renderProducts(): Promise<void> {
   });
 }
 
-// The meta line shows ONLY the leftover carried in from the previous day.
-// Today's received is what you type in the input — we don't mix them here.
-function metaText(pending: number): string {
-  return pending > 0 ? `Previous day left: ${pending}` : 'No previous stock';
+// Meta line: previous-day leftover (context for what carried in) plus the
+// current available-to-sell total (pending + today's received - sold - damaged).
+function metaText(pending: number, available: number): string {
+  const prev = pending > 0 ? `Prev day left: ${pending} · ` : '';
+  return `${prev}Available: ${available}`;
 }
 
 // Set the EXACT received quantity for today (replaces, never adds)
@@ -157,4 +162,13 @@ async function setReceived(productId: number, qty: number): Promise<void> {
     return;
   }
   showToast('Stock updated');
+
+  // Refresh this product's "Available" label in place (received changed).
+  const agg = lastSummary.get(productId);
+  if (agg) {
+    agg.received = qty;
+    agg.available = agg.pending + qty - agg.sold - agg.damaged;
+    const metaEl = document.querySelector(`[data-meta="${productId}"]`);
+    if (metaEl) metaEl.innerHTML = metaText(agg.pending, agg.available);
+  }
 }

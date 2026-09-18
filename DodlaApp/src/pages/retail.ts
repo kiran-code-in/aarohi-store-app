@@ -91,8 +91,15 @@ async function renderProducts(): Promise<void> {
     return;
   }
 
-  // Fetch today's retail sales
+  // Fetch today's summary (retail sold + available stock per product)
   const date = AppState.getDate();
+  const summaryRes = await inventoryService.getDailySummary(date);
+  const availMap = new Map<number, number>();
+  if (summaryRes.data) {
+    summaryRes.data.forEach(s => availMap.set(s.product_id, s.available));
+  }
+
+  // Retail sold today (what's already in each input)
   const txRes = await inventoryService.getDailyTransactions(date);
   const soldMap = new Map<number, number>();
   if (txRes.data) {
@@ -125,13 +132,15 @@ async function renderProducts(): Promise<void> {
 
     const sold = soldMap.get(p.id) || 0;
     const price = priceMap.get(p.id) || 0;
+    const avail = availMap.get(p.id) ?? 0;
+    const stockColor = avail <= 0 ? '#DC2626' : avail <= 3 ? '#D97706' : '#0F766E';
 
     const card = document.createElement('div');
     card.className = 'product-row';
     card.innerHTML = `
       <div class="info">
         <span class="name">${p.product_name}</span>
-        <span class="meta">₹${price} each</span>
+        <span class="meta">₹${price} each · <span style="color:${stockColor};font-weight:700">${avail} in stock</span></span>
       </div>
       <div class="actions" style="display:flex;align-items:center;gap:8px">
         <button data-action="minus" data-id="${p.id}"
