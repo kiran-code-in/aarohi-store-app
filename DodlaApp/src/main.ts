@@ -14,9 +14,10 @@ import { renderRetail } from './pages/retail';
 import { initScan, initScanEvents, stopCamera } from './pages/scan';
 import { renderHistory } from './pages/history';
 import { renderPrices } from './pages/prices';
+import { renderAdvances } from './pages/advances';
 import { inventoryService, customerNotesService } from './services';
 
-type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices';
+type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices' | 'advances';
 
 function navigateTo(page: PageId): void {
   document.querySelectorAll<HTMLElement>('.page').forEach(p => p.classList.remove('active'));
@@ -30,6 +31,7 @@ function navigateTo(page: PageId): void {
   const navMap: Record<string, string> = {
     home: 'home', stock: 'stock', sales: 'sales',
     wholesale: 'sales', scan: 'stock', history: 'history', prices: 'prices',
+    advances: 'sales',
   };
   const navTarget = navMap[page] || 'home';
   document.querySelectorAll<HTMLElement>('.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -45,6 +47,7 @@ function navigateTo(page: PageId): void {
     case 'scan': initScan(); break;
     case 'history': renderHistory(); break;
     case 'prices': renderPrices(); break;
+    case 'advances': renderAdvances(); break;
   }
   if (page !== 'scan') stopCamera();
 }

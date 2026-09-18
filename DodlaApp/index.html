@@ -83,6 +83,9 @@
 
       <!-- Quick actions -->
       <div class="quick-row">
+        <button class="quick-btn" data-goto="advances">
+          <i class="ph ph-hand-coins"></i> Advances
+        </button>
         <button class="quick-btn" data-goto="scan">
           <i class="ph ph-barcode"></i> Scan
         </button>
@@ -146,6 +149,23 @@
       </div>
       <div class="section-label">Today's Orders</div>
       <div id="wholesaleCustomerList" style="padding-bottom:16px"></div>
+    </section>
+
+    <!-- ADVANCES -->
+    <section class="page" id="page-advances">
+      <div class="page-head">
+        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="title">Advance Orders</span>
+      </div>
+      <div style="padding:10px 16px">
+        <button id="advNewBtn" style="width:100%;height:46px;border-radius:12px;background:#0F766E;color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="ph ph-plus"></i> New Advance
+        </button>
+      </div>
+      <div class="section-label">Stock Needed (all pending)</div>
+      <div id="advRollup" style="padding-bottom:6px"></div>
+      <div class="section-label">Pending Orders</div>
+      <div id="advList" style="padding-bottom:16px"></div>
     </section>
 
     <!-- SCAN -->

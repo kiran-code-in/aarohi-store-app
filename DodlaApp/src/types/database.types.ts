@@ -216,3 +216,63 @@ export interface CustomerDailySale {
   }>;
   grand_total: number;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  ADVANCE ORDERS (pre-orders / bookings)
+// ═══════════════════════════════════════════════════════════════
+
+export type AdvanceStatus = 'pending' | 'delivered' | 'cancelled';
+
+export interface AdvanceOrder {
+  id: number;
+  customer_id: string;
+  order_date: string;       // 'YYYY-MM-DD'
+  requested_date: string;   // 'YYYY-MM-DD'
+  advance_amount: number;
+  paid_full: boolean;
+  status: AdvanceStatus;
+  note: string | null;
+  delivered_date: string | null;
+  created_at: string | null;
+}
+
+export interface AdvanceOrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+}
+
+export interface AdvanceOrderInsert {
+  customer_id: string;
+  order_date?: string;
+  requested_date: string;
+  advance_amount: number;
+  paid_full?: boolean;
+  note?: string | null;
+}
+
+export interface AdvanceOrderItemInsert {
+  order_id: number;
+  product_id: number;
+  quantity: number;
+}
+
+/** Advance order enriched with customer name + resolved item details, for UI. */
+export interface AdvanceOrderView extends AdvanceOrder {
+  customer_name: string;
+  items: Array<{
+    product_id: number;
+    product_name: string;
+    quantity: number;
+    wholesale_price: number;
+  }>;
+  order_total: number; // sum of item qty × wholesale_price
+}
+
+/** Aggregate quantity needed per product across all pending advance orders. */
+export interface AdvanceItemRollup {
+  product_id: number;
+  product_name: string;
+  total_quantity: number;
+}

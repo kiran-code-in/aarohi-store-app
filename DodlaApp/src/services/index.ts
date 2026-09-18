@@ -13,3 +13,4 @@ export type { ProductPriceInfo } from './price.service';
 export { customerService } from './customer.service';
 export { inventoryService } from './inventory.service';
 export { customerNotesService } from './customer-notes.service';
+export { advanceOrderService } from './advance-order.service';
