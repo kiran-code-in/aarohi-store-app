@@ -96,47 +96,22 @@ class CustomerNotesService extends BaseService {
         balance: (purchases + opening) - paid,
       });
     }
+    // Read the pre-aggregated balance from the DB view (avoids the 1000-row
+    // cap that undercounted purchases for high-volume customers).
     return this.execute<CustomerBalance>(async () => {
-      // Customer name
-      const { data: cust, error: cErr } = await supabase
-        .from('customers').select('name').eq('id', customerId).single();
-      if (cErr) throw cErr;
-
-      // Total wholesale purchases — join with product prices
-      const { data: txns, error: tErr } = await supabase
-        .from('inventory_transactions')
-        .select('quantity, products ( wholesale_price )')
+      const { data, error } = await supabase
+        .from('customer_balances')
+        .select('customer_id, customer_name, total_purchases, total_paid, balance')
         .eq('customer_id', customerId)
-        .eq('transaction_type', 'sold')
-        .eq('sale_type', 'wholesale');
-      if (tErr) throw tErr;
-
-      let totalPurchases = 0;
-      for (const t of txns || []) {
-        const price = (t.products as unknown as { wholesale_price: number })?.wholesale_price ?? 0;
-        totalPurchases += t.quantity * price;
-      }
-
-      // Total payments
-      const { data: notes, error: nErr } = await supabase
-        .from('customer_notes')
-        .select('amount, note_type')
-        .eq('customer_id', customerId);
-      if (nErr) throw nErr;
-
-      let totalPaid = 0;
-      let openingBalance = 0;
-      for (const n of notes || []) {
-        if (n.note_type === 'payment') totalPaid += n.amount ?? 0;
-        else if (n.note_type === 'balance') openingBalance += n.amount ?? 0;
-      }
+        .single();
+      if (error) throw error;
 
       return {
-        customer_id: customerId,
-        customer_name: cust.name,
-        total_purchases: totalPurchases + openingBalance,
-        total_paid: totalPaid,
-        balance: (totalPurchases + openingBalance) - totalPaid,
+        customer_id: data.customer_id,
+        customer_name: data.customer_name,
+        total_purchases: Number(data.total_purchases) || 0,
+        total_paid: Number(data.total_paid) || 0,
+        balance: Number(data.balance) || 0,
       };
     }, 'getBalance');
   }
@@ -146,53 +121,50 @@ class CustomerNotesService extends BaseService {
    * Returns list sorted by highest outstanding balance.
    */
   async getAllBalances(): Promise<ServiceResult<CustomerBalance[]>> {
-    return this.execute<CustomerBalance[]>(async () => {
-      const { data: customers, error: cErr } = await supabase
-        .from('customers').select('id, name');
-      if (cErr) throw cErr;
-
-      // All wholesale transactions with prices
-      const { data: txns, error: tErr } = await supabase
-        .from('inventory_transactions')
-        .select('customer_id, quantity, products ( wholesale_price )')
-        .eq('transaction_type', 'sold')
-        .eq('sale_type', 'wholesale')
-        .not('customer_id', 'is', null);
-      if (tErr) throw tErr;
-
-      // All notes
-      const { data: notes, error: nErr } = await supabase
-        .from('customer_notes').select('customer_id, amount, note_type');
-      if (nErr) throw nErr;
-
-      const purchaseMap = new Map<string, number>();
-      for (const t of txns || []) {
-        if (!t.customer_id) continue;
-        const price = (t.products as unknown as { wholesale_price: number })?.wholesale_price ?? 0;
-        purchaseMap.set(t.customer_id, (purchaseMap.get(t.customer_id) || 0) + t.quantity * price);
-      }
-
-      const paidMap = new Map<string, number>();
-      const openingMap = new Map<string, number>();
-      for (const n of notes || []) {
-        if (n.note_type === 'payment') paidMap.set(n.customer_id, (paidMap.get(n.customer_id) || 0) + (n.amount ?? 0));
-        else if (n.note_type === 'balance') openingMap.set(n.customer_id, (openingMap.get(n.customer_id) || 0) + (n.amount ?? 0));
-      }
-
-      const balances: CustomerBalance[] = (customers || []).map(c => {
-        const purchases = (purchaseMap.get(c.id) || 0) + (openingMap.get(c.id) || 0);
-        const paid = paidMap.get(c.id) || 0;
+    if (isDemoMode()) {
+      const balances: CustomerBalance[] = DEMO_CUSTOMERS.map(c => {
+        const txns = loadDemoTxns().filter(t =>
+          t.customer_id === c.id && t.transaction_type === 'sold' && t.sale_type === 'wholesale');
+        let purchases = 0;
+        for (const t of txns) {
+          const p = DEMO_PRODUCTS.find(x => x.id === t.product_id);
+          purchases += t.quantity * (p?.wholesale_price ?? 0);
+        }
+        const notes = loadDemoNotes().filter(n => n.customer_id === c.id);
+        let paid = 0, opening = 0;
+        for (const n of notes) {
+          if (n.note_type === 'payment') paid += n.amount ?? 0;
+          else if (n.note_type === 'balance') opening += n.amount ?? 0;
+        }
         return {
-          customer_id: c.id,
-          customer_name: c.name,
-          total_purchases: purchases,
-          total_paid: paid,
-          balance: purchases - paid,
+          customer_id: c.id, customer_name: c.name,
+          total_purchases: purchases + opening, total_paid: paid,
+          balance: (purchases + opening) - paid,
         };
-      }).filter(b => b.total_purchases > 0 || b.total_paid > 0);
-
+      }).filter(b => b.total_purchases !== 0 || b.total_paid !== 0);
       balances.sort((a, b) => b.balance - a.balance);
-      return balances;
+      return success(balances);
+    }
+
+    // Read pre-aggregated balances from the DB view. This avoids Supabase's
+    // 1000-row cap that silently undercounted purchases when summing raw
+    // transaction rows client-side.
+    return this.execute<CustomerBalance[]>(async () => {
+      const { data, error } = await supabase
+        .from('customer_balances')
+        .select('customer_id, customer_name, total_purchases, total_paid, balance')
+        .order('balance', { ascending: false });
+      if (error) throw error;
+
+      return (data || [])
+        .map(b => ({
+          customer_id: b.customer_id,
+          customer_name: b.customer_name,
+          total_purchases: Number(b.total_purchases) || 0,
+          total_paid: Number(b.total_paid) || 0,
+          balance: Number(b.balance) || 0,
+        }))
+        .filter(b => b.total_purchases !== 0 || b.total_paid !== 0);
     }, 'getAllBalances');
   }
 }
