@@ -36,6 +36,23 @@ CREATE INDEX IF NOT EXISTS idx_advance_orders_customer
 CREATE INDEX IF NOT EXISTS idx_advance_order_items_order
   ON advance_order_items (order_id);
 
+-- ── Access for the app (anon/authenticated API roles) ──
+-- The app uses the Supabase anon key. Grant table access and add permissive
+-- RLS policies so inserts/reads work (mirrors a typical anon-key app setup).
+GRANT SELECT, INSERT, UPDATE, DELETE ON advance_orders TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON advance_order_items TO anon, authenticated;
+
+ALTER TABLE advance_orders      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE advance_order_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS advance_orders_all ON advance_orders;
+CREATE POLICY advance_orders_all ON advance_orders
+  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS advance_order_items_all ON advance_order_items;
+CREATE POLICY advance_order_items_all ON advance_order_items
+  FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
 -- ── How delivery works (handled in app code) ──
 -- When an order is marked 'delivered':
 --   1. Each item is recorded as a wholesale 'sold' inventory_transaction for
