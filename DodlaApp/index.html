@@ -17,7 +17,27 @@
   <script type="module" src="/src/main.ts"></script>
 </head>
 <body>
-<div class="app-shell">
+
+<!-- ══ LOGIN GATE ══ -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <img src="logo.png" alt="Aarohi Enterprises logo" class="login-logo" />
+    <h1 class="login-title">Aarohi Enterprises</h1>
+    <p class="login-sub">Sign in to continue</p>
+    <form id="loginForm" autocomplete="on">
+      <label for="loginEmail" class="login-label">Email</label>
+      <input type="email" id="loginEmail" name="email" autocomplete="username"
+             inputmode="email" required placeholder="you@example.com" class="login-input" />
+      <label for="loginPassword" class="login-label">Password</label>
+      <input type="password" id="loginPassword" name="password" autocomplete="current-password"
+             required placeholder="Password" class="login-input" />
+      <div id="loginError" class="login-error" role="alert"></div>
+      <button type="submit" id="loginBtn" class="login-submit">Sign In</button>
+    </form>
+  </div>
+</div>
+
+<div class="app-shell" id="appShell" hidden>
 
   <!-- ══ HEADER ══ -->
   <header class="app-header">
@@ -29,9 +49,10 @@
       </div>
     </div>
     <div class="nav-btns">
-      <button id="prevDayBtn"><i class="ph ph-caret-left"></i></button>
+      <button id="prevDayBtn" aria-label="Previous day"><i class="ph ph-caret-left"></i></button>
       <button id="todayBtn">Today</button>
-      <button id="nextDayBtn"><i class="ph ph-caret-right"></i></button>
+      <button id="nextDayBtn" aria-label="Next day"><i class="ph ph-caret-right"></i></button>
+      <button id="logoutBtn" aria-label="Sign out" title="Sign out"><i class="ph ph-sign-out"></i></button>
     </div>
   </header>
 

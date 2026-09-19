@@ -5,6 +5,7 @@
 import './styles/app.css';
 import { onConnectivityChange } from './lib/supabase';
 import { isDemoMode } from './lib/demo-data';
+import { isSignedIn, signIn, signOut, onAuthChange } from './lib/auth';
 import { AppState, formatCurrency } from './lib/state';
 import { renderHeader, initHeaderNav } from './components/header';
 import { showToast } from './components/toast';
@@ -123,7 +124,12 @@ async function renderDashboard(): Promise<void> {
   }
 }
 
-async function boot(): Promise<void> {
+let appStarted = false;
+
+async function startApp(): Promise<void> {
+  if (appStarted) return;      // wire everything only once
+  appStarted = true;
+
   // Demo mode banner
   if (isDemoMode()) {
     const banner = document.createElement('div');
@@ -136,6 +142,12 @@ async function boot(): Promise<void> {
 
   renderHeader();
   initHeaderNav(() => navigateTo('home'));
+
+  // Logout
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    await signOut();
+    showLogin();
+  });
 
   // Bottom nav
   document.querySelectorAll<HTMLElement>('.bottom-nav button').forEach(btn => {
@@ -170,6 +182,64 @@ async function boot(): Promise<void> {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+// ── Auth gate ────────────────────────────────────────────────────
+function showLogin(): void {
+  document.getElementById('loginScreen')?.removeAttribute('hidden');
+  document.getElementById('appShell')?.setAttribute('hidden', '');
+  const err = document.getElementById('loginError');
+  if (err) err.textContent = '';
+  (document.getElementById('loginForm') as HTMLFormElement | null)?.reset();
+}
+
+async function showApp(): Promise<void> {
+  document.getElementById('loginScreen')?.setAttribute('hidden', '');
+  document.getElementById('appShell')?.removeAttribute('hidden');
+  await startApp();
+  navigateTo('home');
+}
+
+function initLoginForm(): void {
+  const form = document.getElementById('loginForm') as HTMLFormElement | null;
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const emailEl = document.getElementById('loginEmail') as HTMLInputElement;
+    const passEl = document.getElementById('loginPassword') as HTMLInputElement;
+    const btn = document.getElementById('loginBtn') as HTMLButtonElement;
+    const errEl = document.getElementById('loginError');
+
+    if (errEl) errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const err = await signIn(emailEl.value, passEl.value);
+
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+    if (err) {
+      if (errEl) errEl.textContent = err;
+      return;
+    }
+    await showApp();
+  });
+}
+
+async function boot(): Promise<void> {
+  initLoginForm();
+
+  // React to sign-out happening elsewhere (e.g. token expiry)
+  onAuthChange((signedIn) => {
+    if (!signedIn) showLogin();
+  });
+
+  // Demo mode bypasses auth entirely (local test data only)
+  if (isDemoMode() || (await isSignedIn())) {
+    await showApp();
+  } else {
+    showLogin();
   }
 }
 
