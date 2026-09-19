@@ -14,6 +14,10 @@
 -- Run in: Supabase Dashboard → SQL Editor
 -- ================================================================
 
+-- All tables are owned by `postgres`. The SQL Editor may run as a more
+-- restricted role, so switch to postgres (the owner) to run DDL.
+SET ROLE postgres;
+
 -- Helper: enable RLS + authenticated-only policy for one table
 DO $$
 DECLARE
