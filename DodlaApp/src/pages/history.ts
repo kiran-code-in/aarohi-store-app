@@ -8,7 +8,7 @@ import { inventoryService } from '@/services';
 export async function renderHistory(): Promise<void> {
   const list = document.getElementById('historyList');
   if (!list) return;
-  list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Loading...</div>';
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:#64748B;font-size:13px">Loading...</div>';
 
   const days: string[] = [];
   for (let i = 0; i < 14; i++) {
@@ -39,7 +39,7 @@ export async function renderHistory(): Promise<void> {
         ${s.products.filter(p => p.sold > 0 || p.received > 0).map(p => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
             <span style="color:#334155;font-weight:600;flex:1">${p.product_name}</span>
-            <span style="color:#94A3B8;font-size:11px">R:${p.received} · S:${p.sold} · D:${p.damaged}</span>
+            <span style="color:#64748B;font-size:11px">R:${p.received} · S:${p.sold} · D:${p.damaged}</span>
             <span style="font-weight:700;color:#0F766E;width:64px;text-align:right">${formatCurrency(p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price)}</span>
           </div>
         `).join('')}
@@ -53,7 +53,7 @@ export async function renderHistory(): Promise<void> {
   }
 
   if (!hasData) {
-    list.innerHTML = '<div style="text-align:center;padding:48px 16px;color:#94A3B8;font-size:13px">No history yet.<br>Start recording stock & sales.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:48px 16px;color:#64748B;font-size:13px">No history yet.<br>Start recording stock & sales.</div>';
   }
 
   // Toggle

@@ -68,7 +68,7 @@ async function renderDashboard(): Promise<void> {
   if (salesDiv) {
     const sold = s.products.filter(p => p.sold > 0).sort((a, b) => b.sold - a.sold);
     salesDiv.innerHTML = sold.length === 0
-      ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">No sales recorded yet today</div>'
+      ? '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">No sales recorded yet today</div>'
       : sold.map(p => {
           // Correct value: retail units at retail price + wholesale units at wholesale price
           const value = p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
@@ -93,7 +93,7 @@ async function renderDashboard(): Promise<void> {
     // products that have ever had activity (pending, received or sold today).
     const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.pending > 0 || p.received > 0 || p.sold > 0));
     lowDiv.innerHTML = low.length === 0
-      ? '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">All items well stocked</div>'
+      ? '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">All items well stocked</div>'
       : low.map(p => `
           <div class="product-row">
             <div class="info"><span class="name">${p.product_name}</span></div>
@@ -107,7 +107,7 @@ async function renderDashboard(): Promise<void> {
     const balRes = await customerNotesService.getAllBalances();
     const owing = (balRes.data || []).filter(b => b.balance > 0);
     if (owing.length === 0) {
-      balDiv.innerHTML = '<div style="padding:14px 16px;color:#94A3B8;font-size:13px;text-align:center">No outstanding balances</div>';
+      balDiv.innerHTML = '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">No outstanding balances</div>';
     } else {
       const totalDue = owing.reduce((a, b) => a + b.balance, 0);
       balDiv.innerHTML = `
@@ -154,14 +154,23 @@ async function startApp(): Promise<void> {
     btn.addEventListener('click', () => navigateTo(btn.dataset.page as PageId));
   });
 
+  // Activate on Enter/Space for role="button" elements that aren't <button>
+  const keyActivate = (el: HTMLElement, fn: () => void) => {
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', (e) => {
+      const k = (e as KeyboardEvent).key;
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); fn(); }
+    });
+  };
+
   // Dashboard action cards + quick buttons
   document.querySelectorAll<HTMLElement>('[data-goto]').forEach(el => {
-    el.addEventListener('click', () => navigateTo(el.dataset.goto as PageId));
+    keyActivate(el, () => navigateTo(el.dataset.goto as PageId));
   });
 
   // Back buttons
   document.querySelectorAll<HTMLElement>('[data-back]').forEach(btn => {
-    btn.addEventListener('click', () => navigateTo('home'));
+    keyActivate(btn, () => navigateTo('home'));
   });
 
   // Scan

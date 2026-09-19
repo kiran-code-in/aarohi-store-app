@@ -48,7 +48,7 @@ async function renderList(): Promise<void> {
   const listEl = document.getElementById('advList');
   if (!rollupEl || !listEl) return;
 
-  rollupEl.innerHTML = '<div style="padding:12px 16px;color:#94A3B8;font-size:13px">Loading…</div>';
+  rollupEl.innerHTML = '<div style="padding:12px 16px;color:#64748B;font-size:13px">Loading…</div>';
   listEl.innerHTML = '';
 
   const [rollupRes, listRes] = await Promise.all([
@@ -59,7 +59,7 @@ async function renderList(): Promise<void> {
   // Per-item stock-needed rollup
   const rollup = rollupRes.data || [];
   rollupEl.innerHTML = rollup.length === 0
-    ? '<div style="padding:12px 16px;color:#94A3B8;font-size:13px;text-align:center">No pending advances</div>'
+    ? '<div style="padding:12px 16px;color:#64748B;font-size:13px;text-align:center">No pending advances</div>'
     : rollup.map(r => `
         <div class="product-row">
           <div class="info"><span class="name">${r.product_name}</span></div>
@@ -69,7 +69,7 @@ async function renderList(): Promise<void> {
   // Pending orders
   const orders = listRes.data || [];
   if (orders.length === 0) {
-    listEl.innerHTML = '<div style="padding:16px;color:#94A3B8;font-size:13px;text-align:center">No pending orders. Tap “New Advance” to add one.</div>';
+    listEl.innerHTML = '<div style="padding:16px;color:#64748B;font-size:13px;text-align:center">No pending orders. Tap “New Advance” to add one.</div>';
     return;
   }
   listEl.innerHTML = orders.map(renderOrderCard).join('');
@@ -155,7 +155,7 @@ function openCreateModal(): void {
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0">
         <span style="font-size:14px;color:#334155;flex:1">${p.product_name}</span>
-        <span style="font-size:12px;color:#94A3B8;width:44px;text-align:right;margin-right:10px">₹${price}</span>
+        <span style="font-size:12px;color:#64748B;width:44px;text-align:right;margin-right:10px">₹${price}</span>
         <input class="adv-item-input" type="number" min="0" data-pid="${p.id}" placeholder="0"
           style="width:56px;height:34px;text-align:center;border:1.5px solid #E2E8F0;border-radius:9px;font-size:14px;font-weight:700;color:#0F172A;outline:none" />
       </div>`;
@@ -167,7 +167,7 @@ function openCreateModal(): void {
     <div class="modal-box" style="max-height:88vh;overflow-y:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div class="title" style="margin-bottom:0">New Advance Order</div>
-        <button id="advCloseBtn" style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer"><i class="ph ph-x"></i></button>
+        <button id="advCloseBtn" style="background:none;border:none;font-size:20px;color:#64748B;cursor:pointer"><i class="ph ph-x"></i></button>
       </div>
 
       <label style="font-size:12px;font-weight:700;color:#64748B">Customer</label>

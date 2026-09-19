@@ -144,7 +144,7 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #94A3B8;
+  color: #64748B;
   margin-bottom: 3px;
 }
 .summary-strip .stat-value {
@@ -188,7 +188,7 @@ html, body {
   flex-shrink: 0;
 }
 .action-card .label  { font-size: 13px; font-weight: 700; color: #0F172A; line-height: 1.2; }
-.action-card .sub    { font-size: 11px; color: #94A3B8; margin-top: 1px; font-weight: 500; }
+.action-card .sub    { font-size: 11px; color: #64748B; margin-top: 1px; font-weight: 500; }
 
 /* Card accent colors */
 .card-teal  .icon-wrap { background: #CCFBF1; }
@@ -222,7 +222,7 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #94A3B8;
+  color: #64748B;
   padding: 16px 16px 6px;
 }
 
@@ -270,7 +270,7 @@ html, body {
 .product-row:active { background: #F8FAFC; }
 .product-row .info  { display: flex; flex-direction: column; flex: 1; min-width: 0; margin-right: 12px; }
 .product-row .name  { font-size: 14px; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.product-row .meta  { font-size: 11px; color: #94A3B8; margin-top: 1px; font-weight: 500; }
+.product-row .meta  { font-size: 11px; color: #64748B; margin-top: 1px; font-weight: 500; }
 .product-row .actions { flex-shrink: 0; }
 
 /* Subtype header */
@@ -365,7 +365,7 @@ html, body {
   background: transparent;
   cursor: pointer;
   position: relative;
-  color: #94A3B8;
+  color: #64748B;
   font-size: 10px;
   font-weight: 600;
   transition: color 0.15s;
@@ -406,7 +406,7 @@ html, body {
 .cust-row:active { background: #F8FAFC; }
 .cust-row.added  { background: #F0FDF9; cursor: default; }
 .cust-row .name  { font-size: 14px; font-weight: 600; color: #0F172A; }
-.cust-row .status { font-size: 12px; font-weight: 600; color: #94A3B8; }
+.cust-row .status { font-size: 12px; font-weight: 600; color: #64748B; }
 .cust-row.added .status { color: #0F766E; }
 
 /* ─────────────────── HISTORY CARD ─────────────────── */
@@ -440,7 +440,7 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #94A3B8;
+  color: #64748B;
   background: #F8FAFC;
   position: sticky;
   top: 0;
@@ -617,3 +617,17 @@ html, body {
 }
 .login-submit:active { background: #0D6A63; }
 .login-submit:disabled { opacity: 0.6; cursor: default; }
+
+/* ─────────────────── FOCUS VISIBILITY (a11y) ─────────────────── */
+/* Clear keyboard focus outline for all interactive elements, including the
+   div/span "buttons" (action cards, back arrows) that use role="button". */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #0F766E;
+  outline-offset: 2px;
+  border-radius: 8px;
+}

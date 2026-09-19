@@ -66,7 +66,7 @@ function renderCustomerList(filter: string): void {
   );
 
   if (filtered.length === 0 && filter) {
-    container.innerHTML = '<div style="text-align:center;padding:16px;color:#94A3B8;font-size:13px">No match. Use "Add New Customer" below.</div>';
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:13px">No match. Use "Add New Customer" below.</div>';
     return;
   }
 
@@ -121,7 +121,7 @@ async function renderCustomerCards(): Promise<void> {
   });
 
   if (todayCustomers.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:24px 16px;font-size:13px">Tap a customer above to start recording their order.</div>';
+    list.innerHTML = '<div style="text-align:center;color:#64748B;padding:24px 16px;font-size:13px">Tap a customer above to start recording their order.</div>';
     return;
   }
 
@@ -144,10 +144,10 @@ async function renderCustomerCards(): Promise<void> {
         <span style="display:flex;align-items:center;gap:12px">
           <span style="font-size:13px;font-weight:800;color:#0F766E">${formatCurrency(subtotal)}</span>
           <button class="cust-notes-btn" data-custid="${cust.id}" data-custname="${cust.name}"
-            style="background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center" title="Notes & Balance">
+            style="background:none;border:none;cursor:pointer;color:#64748B;display:flex;align-items:center" title="Notes & Balance">
             <i class="ph ph-note-pencil" style="font-size:18px"></i>
           </button>
-          <i class="ph ph-caret-down cust-toggle" data-idx="${idx}" style="color:#94A3B8;font-size:14px;cursor:pointer"></i>
+          <i class="ph ph-caret-down cust-toggle" data-idx="${idx}" style="color:#64748B;font-size:14px;cursor:pointer"></i>
         </span>
       </div>
       <div class="${idx === 0 ? '' : 'hidden'}" id="custBody_${idx}" style="padding:8px 16px 12px">
@@ -165,7 +165,7 @@ async function renderCustomerCards(): Promise<void> {
             return `${typeHeader}
               <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0">
                 <span style="font-size:14px;color:#334155;font-weight:500;flex:1">${p.product_name}</span>
-                <span style="font-size:12px;color:#94A3B8;width:44px;text-align:right;margin-right:10px">₹${wsPrice}</span>
+                <span style="font-size:12px;color:#64748B;width:44px;text-align:right;margin-right:10px">₹${wsPrice}</span>
                 <input class="ws-qty-input" type="number" min="0"
                        data-custid="${cust.id}" data-pid="${p.id}"
                        value="${qty || ''}" placeholder="0"
@@ -292,7 +292,7 @@ async function openNotesModal(customerId: string, customerName: string): Promise
     <div class="modal-box" style="max-height:80vh;overflow-y:auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div class="title" style="margin-bottom:0">${customerName}</div>
-        <button id="notesCloseBtn" style="background:none;border:none;font-size:20px;color:#94A3B8;cursor:pointer"><i class="ph ph-x"></i></button>
+        <button id="notesCloseBtn" style="background:none;border:none;font-size:20px;color:#64748B;cursor:pointer"><i class="ph ph-x"></i></button>
       </div>
       <div id="notesBalance" style="padding:12px 14px;background:#F0FDF9;border-radius:12px;margin:8px 0 16px">
         <div style="font-size:12px;color:#64748B">Loading balance…</div>
@@ -311,7 +311,7 @@ async function openNotesModal(customerId: string, customerName: string): Promise
 
       <button id="noteSaveBtn" style="width:100%;height:46px;border-radius:12px;background:#0F766E;color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;margin-top:12px">Save Entry</button>
 
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94A3B8;margin:16px 0 6px">History</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748B;margin:16px 0 6px">History</div>
       <div id="notesHistory"></div>
     </div>
   `;
@@ -381,7 +381,7 @@ async function loadBalanceAndHistory(): Promise<void> {
   const notesRes = await customerNotesService.getNotes(activeNoteCustomerId);
   if (histDiv) {
     if (!notesRes.data || notesRes.data.length === 0) {
-      histDiv.innerHTML = '<div style="color:#94A3B8;font-size:12px;padding:8px 0">No entries yet</div>';
+      histDiv.innerHTML = '<div style="color:#64748B;font-size:12px;padding:8px 0">No entries yet</div>';
     } else {
       histDiv.innerHTML = notesRes.data.map(n => {
         const label = n.note_type === 'payment' ? 'Paid' : n.note_type === 'balance' ? 'Balance set' : 'Note';
@@ -390,9 +390,9 @@ async function loadBalanceAndHistory(): Promise<void> {
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F8FAFC">
             <div style="flex:1">
               <div style="font-size:13px;font-weight:600;color:${color}">${label}${n.amount ? ' · ' + formatCurrency(n.amount) : ''}</div>
-              ${n.note ? `<div style="font-size:12px;color:#94A3B8">${n.note}</div>` : ''}
+              ${n.note ? `<div style="font-size:12px;color:#64748B">${n.note}</div>` : ''}
             </div>
-            <span style="font-size:11px;color:#94A3B8">${n.note_date || ''}</span>
+            <span style="font-size:11px;color:#64748B">${n.note_date || ''}</span>
           </div>`;
       }).join('');
     }

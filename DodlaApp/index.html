@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0F766E" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -84,20 +84,20 @@
 
       <!-- Action cards -->
       <div class="action-grid">
-        <div class="action-card card-teal" data-goto="stock">
-          <div class="icon-wrap"><i class="ph-fill ph-package" style="color:#0F766E"></i></div>
+        <div class="action-card card-teal" data-goto="stock" role="button" tabindex="0" aria-label="Stock In — record received">
+          <div class="icon-wrap"><i class="ph-fill ph-package" style="color:#0F766E" aria-hidden="true"></i></div>
           <div><div class="label">Stock In</div><div class="sub">Record received</div></div>
         </div>
-        <div class="action-card card-blue" data-goto="sales">
-          <div class="icon-wrap"><i class="ph-fill ph-storefront" style="color:#2563EB"></i></div>
+        <div class="action-card card-blue" data-goto="sales" role="button" tabindex="0" aria-label="Sales — retail and walk-in">
+          <div class="icon-wrap"><i class="ph-fill ph-storefront" style="color:#2563EB" aria-hidden="true"></i></div>
           <div><div class="label">Sales</div><div class="sub">Retail & Walk-in</div></div>
         </div>
-        <div class="action-card card-amber" data-goto="wholesale">
-          <div class="icon-wrap"><i class="ph-fill ph-users" style="color:#D97706"></i></div>
+        <div class="action-card card-amber" data-goto="wholesale" role="button" tabindex="0" aria-label="Wholesale — customer orders">
+          <div class="icon-wrap"><i class="ph-fill ph-users" style="color:#D97706" aria-hidden="true"></i></div>
           <div><div class="label">Wholesale</div><div class="sub">Customer orders</div></div>
         </div>
-        <div class="action-card card-rose" data-goto="prices">
-          <div class="icon-wrap"><i class="ph-fill ph-currency-inr" style="color:#E11D48"></i></div>
+        <div class="action-card card-rose" data-goto="prices" role="button" tabindex="0" aria-label="Prices — update rates">
+          <div class="icon-wrap"><i class="ph-fill ph-currency-inr" style="color:#E11D48" aria-hidden="true"></i></div>
           <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
         </div>
       </div>
@@ -132,7 +132,7 @@
     <!-- STOCK IN -->
     <section class="page" id="page-stock">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Stock In</span>
       </div>
       <div class="cat-tabs" id="stockCatTabs"></div>
@@ -142,7 +142,7 @@
     <!-- SALES -->
     <section class="page" id="page-sales">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Retail Sales</span>
       </div>
       <div class="cat-tabs" id="salesCatTabs"></div>
@@ -152,7 +152,7 @@
     <!-- WHOLESALE -->
     <section class="page" id="page-wholesale">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Wholesale</span>
       </div>
       <div style="padding:12px 16px 6px">
@@ -175,7 +175,7 @@
     <!-- ADVANCES -->
     <section class="page" id="page-advances">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Advance Orders</span>
       </div>
       <div style="padding:10px 16px">
@@ -192,7 +192,7 @@
     <!-- SCAN -->
     <section class="page" id="page-scan">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Quick Add</span>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
@@ -234,7 +234,7 @@
     <!-- HISTORY -->
     <section class="page" id="page-history">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">History</span>
       </div>
       <div id="historyList" style="padding:12px;display:flex;flex-direction:column;gap:8px"></div>
@@ -243,7 +243,7 @@
     <!-- PRICES -->
     <section class="page" id="page-prices">
       <div class="page-head">
-        <span class="back" data-back><i class="ph ph-arrow-left"></i></span>
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
         <span class="title">Prices</span>
       </div>
       <div style="overflow-x:auto;padding:0 12px 8px">

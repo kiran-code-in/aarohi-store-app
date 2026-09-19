@@ -55,7 +55,7 @@ export class ApiError extends Error {
     switch (this.code) {
       case 'NETWORK_ERROR':
       case 'OFFLINE':
-        return 'No internet connection. Changes saved locally.';
+        return 'No internet — not saved. Reconnect and try again.';
       case 'NOT_FOUND':
         return 'Record not found.';
       case 'VALIDATION_ERROR':

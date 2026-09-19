@@ -8,11 +8,11 @@ import { showToast } from '@/components/toast';
 export async function renderPrices(): Promise<void> {
   const tbody = document.getElementById('priceTableBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#64748B;font-size:13px">Loading...</td></tr>';
 
   const prodRes = await productService.getActive();
   if (!prodRes.data) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">Failed to load</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#64748B;font-size:13px">Failed to load</td></tr>';
     return;
   }
 
@@ -35,7 +35,7 @@ export async function renderPrices(): Promise<void> {
     if (pType && pType !== currentType) {
       currentType = pType;
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="4" style="font-size:10px;font-weight:600;color:#94A3B8;padding:6px 8px 2px 12px">${pType}</td>`;
+      tr.innerHTML = `<td colspan="4" style="font-size:10px;font-weight:600;color:#64748B;padding:6px 8px 2px 12px">${pType}</td>`;
       tbody.appendChild(tr);
     }
 
@@ -72,7 +72,7 @@ async function renderPriceHistory(): Promise<void> {
   if (!list) return;
   const res = await priceService.getAllPriceHistory(15);
   if (!res.data || res.data.length === 0) {
-    list.innerHTML = '<div style="color:#94A3B8;font-size:13px;padding:12px 0">No changes yet</div>';
+    list.innerHTML = '<div style="color:#64748B;font-size:13px;padding:12px 0">No changes yet</div>';
     return;
   }
   const prodRes = await productService.getAll();
@@ -81,7 +81,7 @@ async function renderPriceHistory(): Promise<void> {
 
   list.innerHTML = res.data.map(e => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
-      <span style="color:#94A3B8;width:70px">${e.effective_date || ''}</span>
+      <span style="color:#64748B;width:70px">${e.effective_date || ''}</span>
       <span style="font-weight:600;flex:1;color:#334155">${map.get(e.product_id ?? 0) || '?'}</span>
       <span style="font-weight:700;color:#0F766E">₹${e.retail_price ?? 0}</span>
     </div>
