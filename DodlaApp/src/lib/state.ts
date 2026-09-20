@@ -38,6 +38,7 @@ export const AppState = (() => {
     prevDay: () => { currentDate = shiftDate(currentDate, -1); },
     nextDay: () => { currentDate = shiftDate(currentDate, 1); },
     goToday: () => { currentDate = todayKey(); },
+    setDate: (key: string) => { currentDate = key > todayKey() ? todayKey() : key; },
     todayKey,
     formatDate,
     shiftDate,

@@ -16,9 +16,9 @@ import { initScan, initScanEvents, stopCamera } from './pages/scan';
 import { renderHistory } from './pages/history';
 import { renderPrices } from './pages/prices';
 import { renderAdvances } from './pages/advances';
-import { inventoryService, customerNotesService } from './services';
+import { inventoryService, customerNotesService, advanceOrderService } from './services';
 
-type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices' | 'advances';
+type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices' | 'advances' | 'more';
 
 function navigateTo(page: PageId): void {
   document.querySelectorAll<HTMLElement>('.page').forEach(p => p.classList.remove('active'));
@@ -28,11 +28,12 @@ function navigateTo(page: PageId): void {
   // Scroll to top
   document.querySelector('main')?.scrollTo(0, 0);
 
-  // Bottom nav highlight
+  // Bottom nav highlight — which bottom-nav button lights up for each page
   const navMap: Record<string, string> = {
-    home: 'home', stock: 'stock', sales: 'sales',
-    wholesale: 'sales', scan: 'stock', history: 'history', prices: 'prices',
-    advances: 'sales',
+    home: 'home', stock: 'stock', sales: 'sales', wholesale: 'wholesale',
+    scan: 'stock',
+    // Reports, Prices, Advances live under the "More" menu
+    more: 'more', history: 'more', prices: 'more', advances: 'more',
   };
   const navTarget = navMap[page] || 'home';
   document.querySelectorAll<HTMLElement>('.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -49,6 +50,7 @@ function navigateTo(page: PageId): void {
     case 'history': renderHistory(); break;
     case 'prices': renderPrices(); break;
     case 'advances': renderAdvances(); break;
+    case 'more': break; // static menu page
   }
   if (page !== 'scan') stopCamera();
 }
@@ -61,7 +63,7 @@ async function renderDashboard(): Promise<void> {
   set('dashRevenue', formatCurrency(s.total_revenue));
   set('dashProfit', formatCurrency(s.total_profit));
   set('dashSold', String(s.products.reduce((a, p) => a + p.sold, 0)));
-  set('dashDamaged', String(s.products.reduce((a, p) => a + p.damaged, 0)));
+  set('dashStock', String(s.products.reduce((a, p) => a + p.available, 0)));
 
   // Today's top sellers
   const salesDiv = document.getElementById('dashTodaySales');
@@ -89,9 +91,9 @@ async function renderDashboard(): Promise<void> {
   // Low stock alerts
   const lowDiv = document.getElementById('dashLowStock');
   if (lowDiv) {
-    // Flag anything low on true (carry-forward) available stock — but only
-    // products that have ever had activity (pending, received or sold today).
-    const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.pending > 0 || p.received > 0 || p.sold > 0));
+    // Flag anything low on available stock — but only products that have ever
+    // had activity (opening carried, received or sold today).
+    const low = s.products.filter(p => p.available >= 0 && p.available <= 3 && (p.opening > 0 || p.received > 0 || p.sold > 0));
     lowDiv.innerHTML = low.length === 0
       ? '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">All items well stocked</div>'
       : low.map(p => `
@@ -120,6 +122,29 @@ async function renderDashboard(): Promise<void> {
             <div class="info"><span class="name">${b.customer_name}</span></div>
             <span style="font-size:14px;font-weight:800;color:#DC2626">${formatCurrency(b.balance)}</span>
           </div>`).join('')}`;
+    }
+  }
+
+  // Prepare for tomorrow — advance orders due the day after the viewed date
+  const tomDiv = document.getElementById('dashTomorrow');
+  if (tomDiv) {
+    const tomorrow = AppState.shiftDate(AppState.getDate(), 1);
+    const advRes = await advanceOrderService.list('pending');
+    const due = (advRes.data || []).filter(o => o.requested_date === tomorrow);
+    if (due.length === 0) {
+      tomDiv.innerHTML = '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">No advance orders for tomorrow</div>';
+    } else {
+      tomDiv.innerHTML = due.map(o => {
+        const items = o.items.map(i => `${i.quantity}× ${i.product_name}`).join(', ');
+        return `
+          <div class="product-row" style="align-items:flex-start">
+            <div class="info">
+              <span class="name">${o.customer_name}</span>
+              <span class="meta" style="white-space:normal">${items}</span>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#D97706;background:#FEF3C7;padding:3px 8px;border-radius:20px;white-space:nowrap">${o.requested_date}</span>
+          </div>`;
+      }).join('');
     }
   }
 }

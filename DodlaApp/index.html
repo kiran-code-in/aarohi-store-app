@@ -50,8 +50,13 @@
     </div>
     <div class="nav-btns">
       <button id="prevDayBtn" aria-label="Previous day"><i class="ph ph-caret-left"></i></button>
-      <button id="todayBtn">Today</button>
+      <button id="datePickBtn" aria-label="Pick a date" title="Pick a date" style="position:relative">
+        <span id="datePickLabel">Today</span> <i class="ph ph-caret-down" style="font-size:11px"></i>
+        <input type="date" id="datePicker" aria-label="Select date"
+               style="position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer" />
+      </button>
       <button id="nextDayBtn" aria-label="Next day"><i class="ph ph-caret-right"></i></button>
+      <button id="todayBtn" aria-label="Jump to today" title="Jump to today"><i class="ph ph-arrow-counter-clockwise"></i></button>
       <button id="logoutBtn" aria-label="Sign out" title="Sign out"><i class="ph ph-sign-out"></i></button>
     </div>
   </header>
@@ -77,43 +82,15 @@
           <span class="stat-value" id="dashSold">0</span>
         </div>
         <div class="stat">
-          <span class="stat-label">Damaged</span>
-          <span class="stat-value loss" id="dashDamaged">0</span>
+          <span class="stat-label">Stock</span>
+          <span class="stat-value" id="dashStock">0</span>
         </div>
       </div>
 
-      <!-- Action cards -->
-      <div class="action-grid">
-        <div class="action-card card-teal" data-goto="stock" role="button" tabindex="0" aria-label="Stock In — record received">
-          <div class="icon-wrap"><i class="ph-fill ph-package" style="color:#0F766E" aria-hidden="true"></i></div>
-          <div><div class="label">Stock In</div><div class="sub">Record received</div></div>
-        </div>
-        <div class="action-card card-blue" data-goto="sales" role="button" tabindex="0" aria-label="Sales — retail and walk-in">
-          <div class="icon-wrap"><i class="ph-fill ph-storefront" style="color:#2563EB" aria-hidden="true"></i></div>
-          <div><div class="label">Sales</div><div class="sub">Retail & Walk-in</div></div>
-        </div>
-        <div class="action-card card-amber" data-goto="wholesale" role="button" tabindex="0" aria-label="Wholesale — customer orders">
-          <div class="icon-wrap"><i class="ph-fill ph-users" style="color:#D97706" aria-hidden="true"></i></div>
-          <div><div class="label">Wholesale</div><div class="sub">Customer orders</div></div>
-        </div>
-        <div class="action-card card-rose" data-goto="prices" role="button" tabindex="0" aria-label="Prices — update rates">
-          <div class="icon-wrap"><i class="ph-fill ph-currency-inr" style="color:#E11D48" aria-hidden="true"></i></div>
-          <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
-        </div>
-      </div>
 
-      <!-- Quick actions -->
-      <div class="quick-row">
-        <button class="quick-btn" data-goto="advances">
-          <i class="ph ph-hand-coins"></i> Advances
-        </button>
-        <button class="quick-btn" data-goto="scan">
-          <i class="ph ph-barcode"></i> Scan
-        </button>
-        <button class="quick-btn" data-goto="history">
-          <i class="ph ph-clock-counter-clockwise"></i> History
-        </button>
-      </div>
+      <!-- Prepare for tomorrow (advance orders due next day) -->
+      <div class="section-label">Prepare for Tomorrow</div>
+      <div id="dashTomorrow" style="padding:0 0 16px"></div>
 
       <!-- Today's sales -->
       <div class="section-label">Today's Sales</div>
@@ -217,10 +194,6 @@
                   style="flex:1;height:40px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-size:13px;font-weight:700;cursor:pointer">
             Sold
           </button>
-          <button class="type-btn" data-type="damaged"
-                  style="flex:1;height:40px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-size:13px;font-weight:700;cursor:pointer">
-            Damaged
-          </button>
         </div>
 
         <button id="applyCountBtn"
@@ -263,6 +236,32 @@
       <div id="priceHistoryList" style="padding:0 16px 24px"></div>
     </section>
 
+    <!-- MORE -->
+    <section class="page" id="page-more">
+      <div class="page-head">
+        <span class="back" data-back role="button" tabindex="0" aria-label="Go back"><i class="ph ph-arrow-left" aria-hidden="true"></i></span>
+        <span class="title">More</span>
+      </div>
+      <div class="action-grid" style="padding:16px">
+        <div class="action-card card-blue" data-goto="history" role="button" tabindex="0" aria-label="Reports">
+          <div class="icon-wrap"><i class="ph-fill ph-chart-bar" style="color:#2563EB" aria-hidden="true"></i></div>
+          <div><div class="label">Reports</div><div class="sub">Sales history</div></div>
+        </div>
+        <div class="action-card card-rose" data-goto="prices" role="button" tabindex="0" aria-label="Prices">
+          <div class="icon-wrap"><i class="ph-fill ph-currency-inr" style="color:#E11D48" aria-hidden="true"></i></div>
+          <div><div class="label">Prices</div><div class="sub">Update rates</div></div>
+        </div>
+        <div class="action-card card-amber" data-goto="advances" role="button" tabindex="0" aria-label="Advance orders">
+          <div class="icon-wrap"><i class="ph-fill ph-hand-coins" style="color:#D97706" aria-hidden="true"></i></div>
+          <div><div class="label">Advances</div><div class="sub">Pre-orders</div></div>
+        </div>
+        <div class="action-card card-teal" data-goto="scan" role="button" tabindex="0" aria-label="Quick add">
+          <div class="icon-wrap"><i class="ph-fill ph-barcode" style="color:#0F766E" aria-hidden="true"></i></div>
+          <div><div class="label">Quick Add</div><div class="sub">Fast entry</div></div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ══ BOTTOM NAV ══ -->
@@ -277,14 +276,14 @@
     </button>
     <button data-page="sales">
       <i class="ph-fill ph-storefront nav-icon"></i>
-      Sales
+      Retail
     </button>
-    <button data-page="history">
-      <i class="ph-fill ph-chart-bar nav-icon"></i>
-      Reports
+    <button data-page="wholesale">
+      <i class="ph-fill ph-users nav-icon"></i>
+      Wholesale
     </button>
-    <button data-page="prices">
-      <i class="ph-fill ph-gear nav-icon"></i>
+    <button data-page="more">
+      <i class="ph-fill ph-dots-three-circle nav-icon"></i>
       More
     </button>
   </nav>

@@ -183,13 +183,12 @@ export interface DailyProductSummary {
   product_id: number;
   product_name: string;
   category_name: string;
-  pending: number;  // opening balance carried from prior days (SUM received - sold - damaged where date < today, floored at 0)
-  received: number;
-  sold: number;           // total sold (retail + wholesale)
+  opening: number;        // stock carried in from ALL prior days (cumulative received - sold, floored at 0)
+  received: number;       // received on this date
+  sold: number;           // total sold (retail + wholesale) on this date
   sold_retail: number;    // units sold at retail price
   sold_wholesale: number; // units sold at wholesale price
-  damaged: number;
-  available: number; // calculated: pending + received - sold - damaged
+  available: number;      // opening + received - sold (floored at 0)
   purchase_price: number;
   retail_price: number;
   wholesale_price: number;
@@ -201,7 +200,6 @@ export interface DailySummary {
   total_revenue: number;
   total_cost: number;
   total_profit: number;
-  total_damaged_loss: number;
   products: DailyProductSummary[];
 }
 

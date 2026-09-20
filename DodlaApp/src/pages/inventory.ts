@@ -14,7 +14,7 @@ let activeCategory: Category | null = null;
 let listenersBound = false;
 // Latest per-product summary so we can refresh the "Available" label in place
 // after an edit without re-rendering the whole list.
-let lastSummary = new Map<number, { pending: number; received: number; sold: number; damaged: number; available: number }>();
+let lastSummary = new Map<number, { opening: number; received: number; sold: number; available: number }>();
 
 export async function renderInventory(): Promise<void> {
   if (categories.length === 0) {
@@ -100,7 +100,7 @@ async function renderProducts(): Promise<void> {
   // Fetch today's summary
   const date = AppState.getDate();
   const summaryRes = await inventoryService.getDailySummary(date);
-  const summaryMap = new Map<number, { pending: number; received: number; sold: number; damaged: number; available: number }>();
+  const summaryMap = new Map<number, { opening: number; received: number; sold: number; available: number }>();
   if (summaryRes.data) {
     summaryRes.data.forEach(s => summaryMap.set(s.product_id, s));
   }
@@ -121,14 +121,14 @@ async function renderProducts(): Promise<void> {
       list.appendChild(header);
     }
 
-    const agg = summaryMap.get(p.id) || { pending: 0, received: 0, sold: 0, damaged: 0, available: 0 };
+    const agg = summaryMap.get(p.id) || { opening: 0, received: 0, sold: 0, available: 0 };
 
     const card = document.createElement('div');
     card.className = 'product-row';
     card.innerHTML = `
       <div class="info">
         <span class="name">${p.product_name}</span>
-        <span class="meta" data-meta="${p.id}">${metaText(agg.pending ?? 0, agg.available ?? 0)}</span>
+        <span class="meta" data-meta="${p.id}">${metaText(agg.opening ?? 0, agg.available ?? 0)}</span>
       </div>
       <div class="actions" style="display:flex;align-items:center;gap:8px">
         <button data-action="minus" data-id="${p.id}"
@@ -142,11 +142,10 @@ async function renderProducts(): Promise<void> {
   });
 }
 
-// Meta line: previous-day leftover (context for what carried in) plus the
-// current available-to-sell total (pending + today's received - sold - damaged).
-function metaText(pending: number, available: number): string {
-  const prev = pending > 0 ? `Prev day left: ${pending} · ` : '';
-  return `${prev}Available: ${available}`;
+// Meta line: opening stock carried in from all prior days, plus the current
+// available-to-sell total (opening + today's received - today's sold).
+function metaText(opening: number, available: number): string {
+  return `Opening: ${opening} · Available: ${available}`;
 }
 
 // Set the EXACT received quantity for today (replaces, never adds)
@@ -167,8 +166,8 @@ async function setReceived(productId: number, qty: number): Promise<void> {
   const agg = lastSummary.get(productId);
   if (agg) {
     agg.received = qty;
-    agg.available = agg.pending + qty - agg.sold - agg.damaged;
+    agg.available = Math.max(0, agg.opening + qty - agg.sold);
     const metaEl = document.querySelector(`[data-meta="${productId}"]`);
-    if (metaEl) metaEl.innerHTML = metaText(agg.pending, agg.available);
+    if (metaEl) metaEl.innerHTML = metaText(agg.opening, agg.available);
   }
 }

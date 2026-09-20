@@ -294,49 +294,47 @@ class InventoryService extends BaseService {
   }
 
   /**
-   * Get daily summary — aggregated totals per product for a given date.
-   * Returns received, sold, damaged totals per product.
+   * Get daily summary — per product for a given date, using a cumulative
+   * running-ledger for availability:
+   *   opening   = cumulative (received - sold) for ALL days before `date`
+   *   available = opening + received(date) - sold(date)   (floored at 0)
+   * Damages are NOT part of stock math.
    */
   async getDailySummary(date: string): Promise<ServiceResult<DailyProductSummary[]>> {
     if (isDemoMode()) {
       const all = loadDemoTxns();
-      const txns = all.filter(t => t.transaction_date === date);
-      const txMap = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number; damaged: number }>();
-      for (const t of txns) {
-        if (!t.product_id) continue;
-        if (!txMap.has(t.product_id)) txMap.set(t.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 });
-        const e = txMap.get(t.product_id)!;
-        if (t.transaction_type === 'sold') {
-          e.sold += t.quantity;
-          if (t.sale_type === 'wholesale') e.sold_wholesale += t.quantity;
-          else e.sold_retail += t.quantity;
-        } else if (t.transaction_type === 'received') {
-          e.received += t.quantity;
-        } else if (t.transaction_type === 'damaged') {
-          e.damaged += t.quantity;
+      const today = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number }>();
+      const openingMap = new Map<number, number>();
+      for (const t of all) {
+        if (!t.product_id || !t.transaction_date) continue;
+        if (t.transaction_date === date) {
+          if (!today.has(t.product_id)) today.set(t.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0 });
+          const e = today.get(t.product_id)!;
+          if (t.transaction_type === 'sold') {
+            e.sold += t.quantity;
+            if (t.sale_type === 'wholesale') e.sold_wholesale += t.quantity;
+            else e.sold_retail += t.quantity;
+          } else if (t.transaction_type === 'received') {
+            e.received += t.quantity;
+          }
+        } else if (t.transaction_date < date) {
+          const cur = openingMap.get(t.product_id) ?? 0;
+          const delta = t.transaction_type === 'received' ? t.quantity
+                      : t.transaction_type === 'sold' ? -t.quantity : 0;
+          openingMap.set(t.product_id, cur + delta);
         }
       }
-      // Pending = leftover from the PREVIOUS DAY only (that day's net stock).
-      const prevDate = this.previousDay(date);
-      const pendingMap = new Map<number, number>();
-      for (const t of all) {
-        if (!t.product_id || t.transaction_date !== prevDate) continue;
-        const cur = pendingMap.get(t.product_id) ?? 0;
-        const delta = t.transaction_type === 'received' ? t.quantity : -t.quantity;
-        pendingMap.set(t.product_id, cur + delta);
-      }
       const summary: DailyProductSummary[] = DEMO_PRODUCTS.map(p => {
-        const agg = txMap.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 };
-        const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
+        const agg = today.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0 };
+        const opening = Math.max(0, openingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
           product_name: p.product_name,
           category_name: DEMO_CATEGORIES.find(c => c.id === p.category_id)?.name ?? 'Other',
-          pending,
+          opening,
           received: agg.received, sold: agg.sold,
           sold_retail: agg.sold_retail, sold_wholesale: agg.sold_wholesale,
-          damaged: agg.damaged,
-          available: pending + agg.received - agg.sold - agg.damaged,
+          available: Math.max(0, opening + agg.received - agg.sold),
           purchase_price: p.purchase_price ?? 0,
           retail_price: p.retail_price ?? 0,
           wholesale_price: p.wholesale_price ?? 0,
@@ -344,83 +342,30 @@ class InventoryService extends BaseService {
       });
       return success(summary);
     }
+
+    // Live: cumulative running-ledger via the DB function (row-cap-safe).
     return this.execute<DailyProductSummary[]>(async () => {
-      // Fetch all transactions for the date
-      const { data: transactions, error: txError } = await supabase
-        .from('inventory_transactions')
-        .select('product_id, transaction_type, quantity, sale_type')
-        .eq('transaction_date', date);
+      const { data, error } = await supabase.rpc('stock_summary', { as_of: date });
+      if (error) throw error;
 
-      if (txError) throw txError;
-
-      // Pending = leftover from the PREVIOUS DAY only (that day's net stock).
-      const prevDate = this.previousDay(date);
-      const { data: priorTx, error: priorErr } = await supabase
-        .from('inventory_transactions')
-        .select('product_id, transaction_type, quantity')
-        .eq('transaction_date', prevDate);
-
-      if (priorErr) throw priorErr;
-
-      // Fetch all active products with prices and category
-      const { data: products, error: prodError } = await supabase
-        .from('products')
-        .select('id, product_name, purchase_price, retail_price, wholesale_price, category_id, categories ( name )')
-        .eq('active', true)
-        .order('category_id')
-        .order('product_name');
-
-      if (prodError) throw prodError;
-
-      // Aggregate transactions per product, splitting sold by sale type
-      const txMap = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number; damaged: number }>();
-      for (const tx of transactions || []) {
-        if (!tx.product_id) continue;
-        if (!txMap.has(tx.product_id)) {
-          txMap.set(tx.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 });
-        }
-        const entry = txMap.get(tx.product_id)!;
-        if (tx.transaction_type === 'sold') {
-          entry.sold += tx.quantity;
-          if (tx.sale_type === 'wholesale') entry.sold_wholesale += tx.quantity;
-          else entry.sold_retail += tx.quantity;
-        } else if (tx.transaction_type === 'received') {
-          entry.received += tx.quantity;
-        } else if (tx.transaction_type === 'damaged') {
-          entry.damaged += tx.quantity;
-        }
-      }
-
-      // Net of the previous day's transactions = what was left over that day.
-      const pendingMap = new Map<number, number>();
-      for (const tx of priorTx || []) {
-        if (!tx.product_id) continue;
-        const cur = pendingMap.get(tx.product_id) ?? 0;
-        const delta = tx.transaction_type === 'received' ? tx.quantity : -tx.quantity;
-        pendingMap.set(tx.product_id, cur + delta);
-      }
-
-      // Build summary
-      const summary: DailyProductSummary[] = (products || []).map(p => {
-        const agg = txMap.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0 };
-        const pending = Math.max(0, pendingMap.get(p.id) ?? 0);
-        return {
-          product_id: p.id,
-          product_name: p.product_name,
-          category_name: (p.categories as unknown as { name: string })?.name ?? 'Uncategorized',
-          pending,
-          received: agg.received,
-          sold: agg.sold,
-          sold_retail: agg.sold_retail,
-          sold_wholesale: agg.sold_wholesale,
-          damaged: agg.damaged,
-          available: pending + agg.received - agg.sold - agg.damaged,
-          purchase_price: p.purchase_price ?? 0,
-          retail_price: p.retail_price ?? 0,
-          wholesale_price: p.wholesale_price ?? 0,
-        };
-      });
-
+      const summary: DailyProductSummary[] = (data || []).map((r: {
+        product_id: number; product_name: string; category_name: string;
+        opening: number; received: number; sold_retail: number; sold_wholesale: number;
+        sold: number; available: number; purchase_price: number; retail_price: number; wholesale_price: number;
+      }) => ({
+        product_id: r.product_id,
+        product_name: r.product_name,
+        category_name: r.category_name ?? 'Uncategorized',
+        opening: Number(r.opening) || 0,
+        received: Number(r.received) || 0,
+        sold: Number(r.sold) || 0,
+        sold_retail: Number(r.sold_retail) || 0,
+        sold_wholesale: Number(r.sold_wholesale) || 0,
+        available: Number(r.available) || 0,
+        purchase_price: Number(r.purchase_price) || 0,
+        retail_price: Number(r.retail_price) || 0,
+        wholesale_price: Number(r.wholesale_price) || 0,
+      }));
       return summary;
     }, 'getDailySummary');
   }
@@ -443,7 +388,7 @@ class InventoryService extends BaseService {
       for (const tx of data || []) {
         const type = tx.transaction_type as TransactionType;
         if (type === 'received') stock += tx.quantity;
-        else if (type === 'sold' || type === 'damaged') stock -= tx.quantity;
+        else if (type === 'sold') stock -= tx.quantity;
       }
 
       return Math.max(0, stock);
@@ -462,15 +407,12 @@ class InventoryService extends BaseService {
 
       let totalRevenue = 0;
       let totalCost = 0;
-      let totalDamagedLoss = 0;
 
       for (const p of products) {
         // Revenue: retail units × retail price + wholesale units × wholesale price
         totalRevenue += p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
         // Cost: all sold units × purchase price
         totalCost += p.sold * p.purchase_price;
-        // Damaged loss: damaged qty × purchase price
-        totalDamagedLoss += p.damaged * p.purchase_price;
       }
 
       return {
@@ -478,23 +420,12 @@ class InventoryService extends BaseService {
         total_revenue: totalRevenue,
         total_cost: totalCost,
         total_profit: totalRevenue - totalCost,
-        total_damaged_loss: totalDamagedLoss,
         products,
       };
     }, 'getFullDailySummary');
   }
 
   // ── Private helpers ──
-
-  /** Return the calendar day before an ISO date string (YYYY-MM-DD). */
-  private previousDay(date: string): string {
-    const [y, m, d] = date.split('-').map(Number);
-    const dt = new Date(y, m - 1, d - 1);
-    const yy = dt.getFullYear();
-    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-    const dd = String(dt.getDate()).padStart(2, '0');
-    return `${yy}-${mm}-${dd}`;
-  }
 
   private validateTransaction(tx: InventoryTransactionInsert): ApiError | null {
     if (tx.quantity <= 0) {

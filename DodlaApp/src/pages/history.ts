@@ -39,7 +39,7 @@ export async function renderHistory(): Promise<void> {
         ${s.products.filter(p => p.sold > 0 || p.received > 0).map(p => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F8FAFC;font-size:12px">
             <span style="color:#334155;font-weight:600;flex:1">${p.product_name}</span>
-            <span style="color:#64748B;font-size:11px">R:${p.received} · S:${p.sold} · D:${p.damaged}</span>
+            <span style="color:#64748B;font-size:11px">Recv ${p.received} · Sold ${p.sold}</span>
             <span style="font-weight:700;color:#0F766E;width:64px;text-align:right">${formatCurrency(p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price)}</span>
           </div>
         `).join('')}
