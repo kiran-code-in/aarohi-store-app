@@ -348,24 +348,52 @@ async function openNotesModal(customerId: string, customerName: string): Promise
 
   document.getElementById('notesCloseBtn')?.addEventListener('click', () => modal!.classList.remove('open'));
 
-  document.getElementById('noteSaveBtn')?.addEventListener('click', async () => {
-    const amount = parseFloat((document.getElementById('noteAmount') as HTMLInputElement)?.value) || 0;
-    const text = (document.getElementById('noteText') as HTMLInputElement)?.value.trim() || '';
+  // Guard against double submission. The save is async and the inputs were only
+  // cleared AFTER it resolved, so a second tap while the first was in flight
+  // read the same amount and recorded the payment twice — halving the
+  // customer's balance for money they handed over once. On a phone, tapping
+  // again because nothing appeared to happen is the obvious thing to do.
+  const saveBtn = document.getElementById('noteSaveBtn') as HTMLButtonElement | null;
+  let saving = false;
+  saveBtn?.addEventListener('click', async () => {
+    if (saving) return;
+
+    const amountEl = document.getElementById('noteAmount') as HTMLInputElement;
+    const textEl = document.getElementById('noteText') as HTMLInputElement;
+    const amount = parseFloat(amountEl?.value) || 0;
+    const text = textEl?.value.trim() || '';
     if (noteType !== 'note' && amount <= 0) { showToast('Enter an amount'); return; }
     if (noteType === 'note' && !text) { showToast('Enter a note'); return; }
 
-    const res = await customerNotesService.addNote({
-      customer_id: activeNoteCustomerId,
-      note_type: noteType,
-      amount,
-      note: text,
-      note_date: AppState.getDate(),
-    });
-    if (res.error) { showToast(res.error.displayMessage); return; }
-    showToast('Saved');
-    (document.getElementById('noteAmount') as HTMLInputElement).value = '';
-    (document.getElementById('noteText') as HTMLInputElement).value = '';
-    await loadBalanceAndHistory();
+    saving = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    // Clear immediately so a stray tap cannot resubmit the same figure.
+    if (amountEl) amountEl.value = '';
+    if (textEl) textEl.value = '';
+
+    try {
+      const res = await customerNotesService.addNote({
+        customer_id: activeNoteCustomerId,
+        note_type: noteType,
+        amount,
+        note: text,
+        note_date: AppState.getDate(),
+      });
+      if (res.error) {
+        showToast(res.error.displayMessage);
+        // Put the values back so the entry is not silently lost.
+        if (amountEl) amountEl.value = amount ? String(amount) : '';
+        if (textEl) textEl.value = text;
+        return;
+      }
+      showToast('Saved');
+      await loadBalanceAndHistory();
+    } finally {
+      saving = false;
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Entry';
+    }
   });
 
   await loadBalanceAndHistory();
