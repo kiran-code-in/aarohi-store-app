@@ -54,9 +54,26 @@ DECLARE
   p_wholesale NUMERIC;
   p_purchase  NUMERIC;
 BEGIN
-  SELECT retail_price, wholesale_price, purchase_price
+  -- Use the price that applied ON THE TRANSACTION'S OWN DATE, not the current
+  -- price. For a sale entered today that is today's price, which is what we
+  -- want: today's sales bill at today's prices. But the app has a date picker,
+  -- so a sale can be entered for an earlier day — and stamping today's price
+  -- onto a past date would recreate the very bug this migration fixes.
+  SELECT pp.retail_price, pp.wholesale_price, pp.purchase_price
     INTO p_retail, p_wholesale, p_purchase
-  FROM products WHERE id = NEW.product_id;
+  FROM product_prices pp
+  WHERE pp.product_id = NEW.product_id
+    AND pp.effective_date <= NEW.transaction_date
+  ORDER BY pp.effective_date DESC, pp.created_at DESC
+  LIMIT 1;
+
+  -- No price record covering that date (e.g. a product never re-priced):
+  -- fall back to the product's current price.
+  IF NOT FOUND THEN
+    SELECT retail_price, wholesale_price, purchase_price
+      INTO p_retail, p_wholesale, p_purchase
+    FROM products WHERE id = NEW.product_id;
+  END IF;
 
   -- unit_price: only meaningful for sales. An explicitly supplied value wins
   -- (backdated entry / corrections can pass the historical price).
@@ -261,6 +278,21 @@ GROUP BY p.product_name, p.wholesale_price
 HAVING SUM(it.quantity * (COALESCE(p.wholesale_price, 0)
                         - COALESCE(it.unit_price, 0))) <> 0
 ORDER BY overstated_by DESC;
+
+-- 2c-ii. Where does real data actually start?
+-- Transactions exist from 2026-07-01, but the owner reports real trading data
+-- only begins around 2026-09-15 (earlier rows came from the Excel/Sheets
+-- import). This matters: price history starts 2026-08-04, so if real data
+-- starts after that, EVERY real sale can be priced exactly and no real row
+-- should come out price_estimated.
+SELECT date_trunc('month', transaction_date)::date AS month,
+       MIN(transaction_date)                       AS first_day,
+       MAX(transaction_date)                       AS last_day,
+       COUNT(*)                                    AS rows,
+       COUNT(*) FILTER (WHERE price_estimated)     AS estimated_rows
+FROM inventory_transactions
+GROUP BY 1
+ORDER BY 1;
 
 -- 2d. Rows the backfill had to guess, by product — the disclosure list.
 SELECT
