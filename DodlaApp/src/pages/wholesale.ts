@@ -289,6 +289,10 @@ async function addNewCustomer(): Promise<void> {
 //  CUSTOMER NOTES & BALANCE MODAL
 // ═══════════════════════════════════════════════════════════════
 let activeNoteCustomerId = '';
+// Current balance of the open customer, refreshed by loadBalanceAndHistory().
+// Needed so "Set Balance" can behave as its label promises — see the save
+// handler below.
+let activeNoteBalance = 0;
 
 async function openNotesModal(customerId: string, customerName: string): Promise<void> {
   activeNoteCustomerId = customerId;
@@ -362,8 +366,28 @@ async function openNotesModal(customerId: string, customerName: string): Promise
     const textEl = document.getElementById('noteText') as HTMLInputElement;
     const amount = parseFloat(amountEl?.value) || 0;
     const text = textEl?.value.trim() || '';
-    if (noteType !== 'note' && amount <= 0) { showToast('Enter an amount'); return; }
+    if (noteType === 'payment' && amount <= 0) { showToast('Enter an amount'); return; }
+    // A balance of 0 is meaningful — it means settled — so only reject a blank.
+    if (noteType === 'balance' && (amountEl?.value ?? '').trim() === '') {
+      showToast('Enter the balance'); return;
+    }
     if (noteType === 'note' && !text) { showToast('Enter a note'); return; }
+
+    // "Set Balance" must SET, not add. Balance notes are SUMMED by the
+    // customer_balances view, so entering "Set Balance 786" twice used to add
+    // 786 twice and silently double what the customer appears to owe. Store the
+    // difference needed to reach the figure that was typed.
+    let amountToStore = amount;
+    let noteToStore = text;
+    if (noteType === 'balance') {
+      amountToStore = Math.round((amount - activeNoteBalance) * 100) / 100;
+      if (amountToStore === 0) {
+        showToast(`Balance is already ${formatCurrency(amount)}`);
+        return;
+      }
+      const detail = `Set balance to ${formatCurrency(amount)} (was ${formatCurrency(activeNoteBalance)})`;
+      noteToStore = text ? `${text} — ${detail}` : detail;
+    }
 
     saving = true;
     saveBtn.disabled = true;
@@ -376,8 +400,8 @@ async function openNotesModal(customerId: string, customerName: string): Promise
       const res = await customerNotesService.addNote({
         customer_id: activeNoteCustomerId,
         note_type: noteType,
-        amount,
-        note: text,
+        amount: amountToStore,
+        note: noteToStore,
         note_date: AppState.getDate(),
       });
       if (res.error) {
@@ -406,6 +430,7 @@ async function loadBalanceAndHistory(): Promise<void> {
   const balRes = await customerNotesService.getBalance(activeNoteCustomerId);
   if (balDiv && balRes.data) {
     const b = balRes.data;
+    activeNoteBalance = b.balance;
     const owes = b.balance > 0;
     balDiv.innerHTML = `
       <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748B;margin-bottom:4px">
