@@ -63,16 +63,32 @@ let _nextNoteId = 500;
 export function loadDemoTxns(): InventoryTransaction[] {
   const raw = localStorage.getItem(TX_KEY);
   if (raw) return JSON.parse(raw);
-  // Seed one test day (today) with sample data
+  // Seed one test day (today) with sample data.
+  // unit_price / unit_cost mirror what the DB trigger stamps on live rows, so
+  // money in demo mode is read from the snapshot exactly as it is in production.
+  const priced = (
+    productId: number,
+    type: InventoryTransaction['transaction_type'],
+    saleType: InventoryTransaction['sale_type']
+  ): Pick<InventoryTransaction, 'unit_price' | 'unit_cost' | 'price_estimated'> => {
+    const p = DEMO_PRODUCTS.find(d => d.id === productId);
+    return {
+      unit_price: type !== 'sold'
+        ? null
+        : saleType === 'wholesale' ? (p?.wholesale_price ?? 0) : (p?.retail_price ?? 0),
+      unit_cost: p?.purchase_price ?? 0,
+      price_estimated: false,
+    };
+  };
   const seed: InventoryTransaction[] = [
-    { id: 1, product_id: 1, transaction_type: 'received', quantity: 30, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null },
-    { id: 2, product_id: 2, transaction_type: 'received', quantity: 20, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null },
-    { id: 3, product_id: 3, transaction_type: 'received', quantity: 25, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null },
-    { id: 4, product_id: 1, transaction_type: 'sold', quantity: 8, remarks: 'TEST Ramesh', transaction_date: today(), created_at: null, sale_type: 'wholesale', customer_id: 'demo-c1' },
-    { id: 5, product_id: 3, transaction_type: 'sold', quantity: 5, remarks: 'TEST Ramesh', transaction_date: today(), created_at: null, sale_type: 'wholesale', customer_id: 'demo-c1' },
-    { id: 6, product_id: 1, transaction_type: 'sold', quantity: 6, remarks: null, transaction_date: today(), created_at: null, sale_type: 'retail', customer_id: null },
-    { id: 7, product_id: 4, transaction_type: 'sold', quantity: 10, remarks: null, transaction_date: today(), created_at: null, sale_type: 'retail', customer_id: null },
-    { id: 8, product_id: 3, transaction_type: 'damaged', quantity: 1, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null },
+    { id: 1, product_id: 1, transaction_type: 'received', quantity: 30, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null, ...priced(1, 'received', null) },
+    { id: 2, product_id: 2, transaction_type: 'received', quantity: 20, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null, ...priced(2, 'received', null) },
+    { id: 3, product_id: 3, transaction_type: 'received', quantity: 25, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null, ...priced(3, 'received', null) },
+    { id: 4, product_id: 1, transaction_type: 'sold', quantity: 8, remarks: 'TEST Ramesh', transaction_date: today(), created_at: null, sale_type: 'wholesale', customer_id: 'demo-c1', ...priced(1, 'sold', 'wholesale') },
+    { id: 5, product_id: 3, transaction_type: 'sold', quantity: 5, remarks: 'TEST Ramesh', transaction_date: today(), created_at: null, sale_type: 'wholesale', customer_id: 'demo-c1', ...priced(3, 'sold', 'wholesale') },
+    { id: 6, product_id: 1, transaction_type: 'sold', quantity: 6, remarks: null, transaction_date: today(), created_at: null, sale_type: 'retail', customer_id: null, ...priced(1, 'sold', 'retail') },
+    { id: 7, product_id: 4, transaction_type: 'sold', quantity: 10, remarks: null, transaction_date: today(), created_at: null, sale_type: 'retail', customer_id: null, ...priced(4, 'sold', 'retail') },
+    { id: 8, product_id: 3, transaction_type: 'damaged', quantity: 1, remarks: null, transaction_date: today(), created_at: null, sale_type: null, customer_id: null, ...priced(3, 'damaged', null) },
   ];
   saveDemoTxns(seed);
   return seed;

@@ -72,8 +72,9 @@ async function renderDashboard(): Promise<void> {
     salesDiv.innerHTML = sold.length === 0
       ? '<div style="padding:14px 16px;color:#64748B;font-size:13px;text-align:center">No sales recorded yet today</div>'
       : sold.map(p => {
-          // Correct value: retail units at retail price + wholesale units at wholesale price
-          const value = p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
+          // Revenue at the prices actually charged, summed from each
+          // transaction's snapshot — NOT recomputed from the current price list.
+          const value = p.revenue;
           const breakdown = p.sold_wholesale > 0
             ? `${p.sold} sold (${p.sold_retail} retail, ${p.sold_wholesale} wholesale)`
             : `${p.sold} sold`;

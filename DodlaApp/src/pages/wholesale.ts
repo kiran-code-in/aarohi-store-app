@@ -100,14 +100,21 @@ async function renderCustomerCards(): Promise<void> {
   // Fetch today's transactions to show existing quantities
   const date = AppState.getDate();
   const txRes = await inventoryService.getDailyTransactions(date);
-  const txByCustomer = new Map<string, Map<number, number>>();
+  // Carry the price each row was recorded at alongside the quantity, so a
+  // past date's subtotal reflects what was actually charged rather than
+  // today's price list.
+  const txByCustomer = new Map<string, Map<number, { qty: number; unitPrice: number | null }>>();
   if (txRes.data) {
     txRes.data
       .filter(tx => tx.customer_id && tx.transaction_type === 'sold' && tx.sale_type === 'wholesale')
       .forEach(tx => {
         if (!txByCustomer.has(tx.customer_id!)) txByCustomer.set(tx.customer_id!, new Map());
         const map = txByCustomer.get(tx.customer_id!)!;
-        map.set(tx.product_id!, (map.get(tx.product_id!) || 0) + tx.quantity);
+        const prev = map.get(tx.product_id!);
+        map.set(tx.product_id!, {
+          qty: (prev?.qty ?? 0) + tx.quantity,
+          unitPrice: tx.unit_price ?? prev?.unitPrice ?? null,
+        });
       });
   }
 
@@ -132,9 +139,14 @@ async function renderCustomerCards(): Promise<void> {
   }
 
   todayCustomers.forEach((cust, idx) => {
-    const custTx = txByCustomer.get(cust.id) || new Map();
+    const custTx = txByCustomer.get(cust.id)
+      ?? new Map<number, { qty: number; unitPrice: number | null }>();
     let subtotal = 0;
-    custTx.forEach((qty, pid) => { subtotal += qty * (priceMap.get(pid) || 0); });
+    // Recorded rows bill at their snapshotted price; the current list price is
+    // only a fallback for rows written before snapshots existed.
+    custTx.forEach((entry, pid) => {
+      subtotal += entry.qty * (entry.unitPrice ?? priceMap.get(pid) ?? 0);
+    });
 
     const card = document.createElement('div');
     card.style.cssText = 'background:#fff;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #F1F5F9;margin:0 16px 10px;overflow:hidden';
@@ -154,8 +166,11 @@ async function renderCustomerCards(): Promise<void> {
         ${(() => {
           let currentType = '';
           return products.map(p => {
-            const qty = custTx.get(p.id) || 0;
-            const wsPrice = priceMap.get(p.id) || 0;
+            const entry = custTx.get(p.id);
+            const qty = entry?.qty ?? 0;
+            // Show the price this row was billed at; for an empty row show the
+            // current price, which is what a new entry will be recorded at.
+            const wsPrice = entry?.unitPrice ?? priceMap.get(p.id) ?? 0;
             let typeHeader = '';
             const pType = p.product_type || '';
             if (pType && pType !== currentType) {

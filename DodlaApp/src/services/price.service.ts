@@ -7,7 +7,7 @@ import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
 import { ServiceResult, success } from '@/lib/error-handler';
 import { isDemoMode, DEMO_PRODUCTS } from '@/lib/demo-data';
-import type { Product, ProductPrice, ProductPriceInsert } from '@/types/database.types';
+import type { Product, ProductPrice } from '@/types/database.types';
 
 export interface ProductPriceInfo {
   product_id: number;
@@ -69,8 +69,16 @@ class PriceService extends BaseService {
   }
 
   /**
-   * Update a product's price and record history.
-   * Updates the products table (current price) AND inserts into product_prices (history).
+   * Update a product's price.
+   *
+   * History is recorded by the `trg_record_price_change` DB trigger
+   * (supabase-price-snapshot.sql), in the same transaction as the price change.
+   * This used to be an un-awaited client-side insert that only console.warn'd
+   * on failure, so history could silently diverge from the real prices — which
+   * is why sales before price history existed can no longer be priced exactly.
+   *
+   * Changing a price only affects FUTURE transactions. Past sales keep the
+   * price snapshotted on their inventory_transactions row.
    */
   async updatePrice(
     productId: number,
@@ -99,26 +107,7 @@ class PriceService extends BaseService {
       'updatePrice'
     );
 
-    if (result.error) return result;
-
-    // Record in price history
-    const today = new Date().toISOString().split('T')[0];
-    const historyEntry: ProductPriceInsert = {
-      product_id: productId,
-      purchase_price: prices.purchase_price ?? result.data!.purchase_price,
-      retail_price: prices.retail_price ?? result.data!.retail_price,
-      wholesale_price: prices.wholesale_price ?? result.data!.wholesale_price,
-      effective_date: today,
-    };
-
-    // Fire-and-forget history insert (don't fail the main operation)
-    supabase
-      .from('product_prices')
-      .insert(historyEntry)
-      .then(({ error }) => {
-        if (error) console.warn('[PriceService] Failed to record price history:', error.message);
-      });
-
+    // No history insert here — trg_record_price_change handles it atomically.
     return result;
   }
 
