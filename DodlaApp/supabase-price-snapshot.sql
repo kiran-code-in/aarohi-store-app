@@ -34,11 +34,28 @@ ALTER TABLE inventory_transactions
   ADD COLUMN IF NOT EXISTS price_estimated BOOLEAN NOT NULL DEFAULT FALSE;
 
 COMMENT ON COLUMN inventory_transactions.unit_price IS
-  'Price per unit captured when the row was written. NULL for received/damaged. '
+  'Selling price per unit, captured when the row was written, resolved from the '
+  'price effective on transaction_date. NULL for received/damaged. '
   'Never recompute money from products.* — that is the bug this column fixes.';
 COMMENT ON COLUMN inventory_transactions.price_estimated IS
   'TRUE when the backfill could not find a price effective at transaction_date '
   'and had to infer one. Reports should disclose these rather than imply precision.';
+
+-- KNOWN LIMITATION — REVENUE IS EXACT, PROFIT IS APPROXIMATE.
+-- unit_cost is the purchase price effective on the SALE's date, not what was
+-- actually paid for the specific units being sold. Stock bought yesterday and
+-- sold today after a purchase-price rise is costed at the new, higher price, so
+-- that day's profit reads low.
+--
+-- Costing it properly needs a FIFO or weighted-average rule over the 'received'
+-- rows (which do carry the price paid at receipt, so the data is available).
+-- Deliberately not implemented — it is an accounting choice, and the owner
+-- elected to audit profit manually rather than have a rule chosen for them.
+-- Revenue, customer balances and all money owed are unaffected by this.
+COMMENT ON COLUMN inventory_transactions.unit_cost IS
+  'Purchase price per unit effective on transaction_date. NOT the actual cost of '
+  'the specific stock sold — no FIFO/average costing — so profit is approximate '
+  'across a purchase-price change. Revenue and balances are exact.';
 
 
 -- ── 2. Trigger: stamp the price on every new row ─────────────────
