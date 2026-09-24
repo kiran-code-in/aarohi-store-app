@@ -20,6 +20,7 @@ import type {
   InventoryTransaction,
   InventoryTransactionInsert,
   TransactionType,
+  SaleType,
   DailyProductSummary,
   DailySummary,
 } from '@/types/database.types';
@@ -38,6 +39,7 @@ class InventoryService extends BaseService {
 
     if (isDemoMode()) {
       const txns = loadDemoTxns();
+      const saleType = tx.transaction_type === 'sold' ? (tx.sale_type ?? null) : null;
       const newTx: InventoryTransaction = {
         id: nextTxId(),
         product_id: tx.product_id,
@@ -46,8 +48,9 @@ class InventoryService extends BaseService {
         remarks: tx.remarks ?? null,
         transaction_date: tx.transaction_date,
         created_at: new Date().toISOString(),
-        sale_type: tx.transaction_type === 'sold' ? (tx.sale_type ?? null) : null,
+        sale_type: saleType,
         customer_id: tx.transaction_type === 'sold' ? (tx.customer_id ?? null) : null,
+        ...this.demoPriceSnapshot(tx.product_id, tx.transaction_type, saleType),
       };
       txns.push(newTx);
       saveDemoTxns(txns);
@@ -129,6 +132,7 @@ class InventoryService extends BaseService {
           quantity: params.quantity, remarks: null, transaction_date: params.date,
           created_at: new Date().toISOString(), sale_type: params.saleType,
           customer_id: params.saleType === 'wholesale' ? (params.customerId ?? null) : null,
+          ...this.demoPriceSnapshot(params.productId, 'sold', params.saleType),
         });
       }
       saveDemoTxns(txns);
@@ -193,6 +197,7 @@ class InventoryService extends BaseService {
           id: nextTxId(), product_id: params.productId, transaction_type: params.type,
           quantity: params.quantity, remarks: null, transaction_date: params.date,
           created_at: new Date().toISOString(), sale_type: null, customer_id: null,
+          ...this.demoPriceSnapshot(params.productId, params.type, null),
         });
       }
       saveDemoTxns(txns);
@@ -303,19 +308,48 @@ class InventoryService extends BaseService {
   async getDailySummary(date: string): Promise<ServiceResult<DailyProductSummary[]>> {
     if (isDemoMode()) {
       const all = loadDemoTxns();
-      const today = new Map<number, { received: number; sold: number; sold_retail: number; sold_wholesale: number }>();
+      type DayAgg = {
+        received: number; sold: number; sold_retail: number; sold_wholesale: number;
+        damaged: number; revenue_retail: number; revenue_wholesale: number;
+        cost_of_goods: number; damaged_loss: number; price_estimated: boolean;
+      };
+      const newAgg = (): DayAgg => ({
+        received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0, damaged: 0,
+        revenue_retail: 0, revenue_wholesale: 0, cost_of_goods: 0, damaged_loss: 0,
+        price_estimated: false,
+      });
+      const today = new Map<number, DayAgg>();
       const openingMap = new Map<number, number>();
       for (const t of all) {
         if (!t.product_id || !t.transaction_date) continue;
         if (t.transaction_date === date) {
-          if (!today.has(t.product_id)) today.set(t.product_id, { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0 });
+          if (!today.has(t.product_id)) today.set(t.product_id, newAgg());
           const e = today.get(t.product_id)!;
+          const demoProduct = DEMO_PRODUCTS.find(p => p.id === t.product_id);
+          // Demo rows written before price snapshots existed have no unit_price;
+          // fall back to the product's list price for those.
+          const fallbackPrice = t.sale_type === 'wholesale'
+            ? (demoProduct?.wholesale_price ?? 0)
+            : (demoProduct?.retail_price ?? 0);
+          const unitPrice = t.unit_price ?? fallbackPrice;
+          const unitCost = t.unit_cost ?? (demoProduct?.purchase_price ?? 0);
+          if (t.unit_price == null) e.price_estimated = true;
+
           if (t.transaction_type === 'sold') {
             e.sold += t.quantity;
-            if (t.sale_type === 'wholesale') e.sold_wholesale += t.quantity;
-            else e.sold_retail += t.quantity;
+            e.cost_of_goods += t.quantity * unitCost;
+            if (t.sale_type === 'wholesale') {
+              e.sold_wholesale += t.quantity;
+              e.revenue_wholesale += t.quantity * unitPrice;
+            } else {
+              e.sold_retail += t.quantity;
+              e.revenue_retail += t.quantity * unitPrice;
+            }
           } else if (t.transaction_type === 'received') {
             e.received += t.quantity;
+          } else if (t.transaction_type === 'damaged') {
+            e.damaged += t.quantity;
+            e.damaged_loss += t.quantity * unitCost;
           }
         } else if (t.transaction_date < date) {
           const cur = openingMap.get(t.product_id) ?? 0;
@@ -325,7 +359,7 @@ class InventoryService extends BaseService {
         }
       }
       const summary: DailyProductSummary[] = DEMO_PRODUCTS.map(p => {
-        const agg = today.get(p.id) || { received: 0, sold: 0, sold_retail: 0, sold_wholesale: 0 };
+        const agg = today.get(p.id) ?? newAgg();
         const opening = Math.max(0, openingMap.get(p.id) ?? 0);
         return {
           product_id: p.id,
@@ -334,7 +368,14 @@ class InventoryService extends BaseService {
           opening,
           received: agg.received, sold: agg.sold,
           sold_retail: agg.sold_retail, sold_wholesale: agg.sold_wholesale,
+          damaged: agg.damaged,
           available: Math.max(0, opening + agg.received - agg.sold),
+          revenue_retail: agg.revenue_retail,
+          revenue_wholesale: agg.revenue_wholesale,
+          revenue: agg.revenue_retail + agg.revenue_wholesale,
+          cost_of_goods: agg.cost_of_goods,
+          damaged_loss: agg.damaged_loss,
+          price_estimated: agg.price_estimated,
           purchase_price: p.purchase_price ?? 0,
           retail_price: p.retail_price ?? 0,
           wholesale_price: p.wholesale_price ?? 0,
@@ -351,21 +392,35 @@ class InventoryService extends BaseService {
       const summary: DailyProductSummary[] = (data || []).map((r: {
         product_id: number; product_name: string; category_name: string;
         opening: number; received: number; sold_retail: number; sold_wholesale: number;
-        sold: number; available: number; purchase_price: number; retail_price: number; wholesale_price: number;
-      }) => ({
-        product_id: r.product_id,
-        product_name: r.product_name,
-        category_name: r.category_name ?? 'Uncategorized',
-        opening: Number(r.opening) || 0,
-        received: Number(r.received) || 0,
-        sold: Number(r.sold) || 0,
-        sold_retail: Number(r.sold_retail) || 0,
-        sold_wholesale: Number(r.sold_wholesale) || 0,
-        available: Number(r.available) || 0,
-        purchase_price: Number(r.purchase_price) || 0,
-        retail_price: Number(r.retail_price) || 0,
-        wholesale_price: Number(r.wholesale_price) || 0,
-      }));
+        sold: number; damaged: number; available: number;
+        revenue_retail: number; revenue_wholesale: number; cost_of_goods: number;
+        damaged_loss: number; price_estimated: boolean;
+        purchase_price: number; retail_price: number; wholesale_price: number;
+      }) => {
+        const revenueRetail = Number(r.revenue_retail) || 0;
+        const revenueWholesale = Number(r.revenue_wholesale) || 0;
+        return {
+          product_id: r.product_id,
+          product_name: r.product_name,
+          category_name: r.category_name ?? 'Uncategorized',
+          opening: Number(r.opening) || 0,
+          received: Number(r.received) || 0,
+          sold: Number(r.sold) || 0,
+          sold_retail: Number(r.sold_retail) || 0,
+          sold_wholesale: Number(r.sold_wholesale) || 0,
+          damaged: Number(r.damaged) || 0,
+          available: Number(r.available) || 0,
+          revenue_retail: revenueRetail,
+          revenue_wholesale: revenueWholesale,
+          revenue: revenueRetail + revenueWholesale,
+          cost_of_goods: Number(r.cost_of_goods) || 0,
+          damaged_loss: Number(r.damaged_loss) || 0,
+          price_estimated: Boolean(r.price_estimated),
+          purchase_price: Number(r.purchase_price) || 0,
+          retail_price: Number(r.retail_price) || 0,
+          wholesale_price: Number(r.wholesale_price) || 0,
+        };
+      });
       return summary;
     }, 'getDailySummary');
   }
@@ -397,6 +452,11 @@ class InventoryService extends BaseService {
 
   /**
    * Get full daily summary with totals (revenue, cost, profit).
+   *
+   * Totals are summed from the price SNAPSHOTTED on each transaction row.
+   * They used to be recomputed as `sold_retail * retail_price + sold_wholesale
+   * * wholesale_price` against the CURRENT price list, which meant editing a
+   * price silently changed the revenue and profit of every past day.
    */
   async getFullDailySummary(date: string): Promise<ServiceResult<DailySummary>> {
     return this.execute<DailySummary>(async () => {
@@ -407,12 +467,14 @@ class InventoryService extends BaseService {
 
       let totalRevenue = 0;
       let totalCost = 0;
+      let totalDamagedLoss = 0;
+      let priceEstimated = false;
 
       for (const p of products) {
-        // Revenue: retail units × retail price + wholesale units × wholesale price
-        totalRevenue += p.sold_retail * p.retail_price + p.sold_wholesale * p.wholesale_price;
-        // Cost: all sold units × purchase price
-        totalCost += p.sold * p.purchase_price;
+        totalRevenue += p.revenue;
+        totalCost += p.cost_of_goods;
+        totalDamagedLoss += p.damaged_loss;
+        if (p.price_estimated) priceEstimated = true;
       }
 
       return {
@@ -420,12 +482,38 @@ class InventoryService extends BaseService {
         total_revenue: totalRevenue,
         total_cost: totalCost,
         total_profit: totalRevenue - totalCost,
+        total_damaged_loss: totalDamagedLoss,
+        price_estimated: priceEstimated,
         products,
       };
     }, 'getFullDailySummary');
   }
 
   // ── Private helpers ──
+
+  /**
+   * Demo-mode stand-in for the DB trigger that stamps unit_price / unit_cost.
+   * Live rows get these from `fill_transaction_prices()` in
+   * supabase-price-snapshot.sql; demo rows have no DB, so we snapshot here to
+   * keep both paths behaving the same.
+   */
+  private demoPriceSnapshot(
+    productId: number,
+    type: TransactionType,
+    saleType: SaleType
+  ): Pick<InventoryTransaction, 'unit_price' | 'unit_cost' | 'price_estimated'> {
+    const p = DEMO_PRODUCTS.find(d => d.id === productId);
+    const unitPrice = type !== 'sold'
+      ? null
+      : saleType === 'wholesale'
+        ? (p?.wholesale_price ?? 0)
+        : (p?.retail_price ?? 0);
+    return {
+      unit_price: unitPrice,
+      unit_cost: p?.purchase_price ?? 0,
+      price_estimated: false,
+    };
+  }
 
   private validateTransaction(tx: InventoryTransactionInsert): ApiError | null {
     if (tx.quantity <= 0) {

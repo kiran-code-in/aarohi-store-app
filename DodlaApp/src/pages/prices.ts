@@ -5,6 +5,12 @@
 import { productService, priceService } from '@/services';
 import { showToast } from '@/components/toast';
 
+// Bound ONCE on the persistent tbody. This listener used to be registered
+// inside renderPrices(), so every visit to the page stacked another copy and a
+// single edit fired several saves — visible in product_prices as duplicate rows
+// milliseconds apart.
+let listenersBound = false;
+
 export async function renderPrices(): Promise<void> {
   const tbody = document.getElementById('priceTableBody');
   if (!tbody) return;
@@ -42,29 +48,53 @@ export async function renderPrices(): Promise<void> {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight:600;font-size:13px;color:#0F172A">${p.product_name}</td>
-      <td><input type="number" data-id="${p.id}" data-field="purchase_price" value="${p.purchase_price ?? 0}" step="0.5" /></td>
-      <td><input type="number" data-id="${p.id}" data-field="retail_price" value="${p.retail_price ?? 0}" step="0.5" /></td>
-      <td><input type="number" data-id="${p.id}" data-field="wholesale_price" value="${p.wholesale_price ?? 0}" step="0.5" /></td>
+      <td><input type="number" data-id="${p.id}" data-field="purchase_price" value="${p.purchase_price ?? 0}" data-original="${p.purchase_price ?? 0}" step="0.5" /></td>
+      <td><input type="number" data-id="${p.id}" data-field="retail_price" value="${p.retail_price ?? 0}" data-original="${p.retail_price ?? 0}" step="0.5" /></td>
+      <td><input type="number" data-id="${p.id}" data-field="wholesale_price" value="${p.wholesale_price ?? 0}" data-original="${p.wholesale_price ?? 0}" step="0.5" /></td>
     `;
     tbody.appendChild(tr);
   });
 
-  // Save on change
+  bindPriceSave(tbody);
+  await renderPriceHistory();
+}
+
+function bindPriceSave(tbody: HTMLElement): void {
+  if (listenersBound) return;
+
   tbody.addEventListener('change', async (e) => {
     const inp = e.target as HTMLInputElement;
     if (!inp.dataset.id) return;
+
+    const val = parseFloat(inp.value) || 0;
+    const original = parseFloat(inp.dataset.original ?? '') || 0;
+
+    // Skip no-op saves. Each save appends a product_prices row, so blurring a
+    // field you did not actually change used to record a phantom price change.
+    if (val === original) return;
+
     const id = parseInt(inp.dataset.id);
     const field = inp.dataset.field!;
-    const val = parseFloat(inp.value) || 0;
 
     const prices: Record<string, number> = {};
     prices[field] = val;
-    const res = await priceService.updatePrice(id, prices as { purchase_price?: number; retail_price?: number; wholesale_price?: number });
-    if (res.error) showToast(res.error.displayMessage);
-    else showToast('Saved');
+    const res = await priceService.updatePrice(
+      id,
+      prices as { purchase_price?: number; retail_price?: number; wholesale_price?: number }
+    );
+
+    if (res.error) {
+      showToast(res.error.displayMessage);
+      inp.value = String(original); // keep the field honest about what is stored
+      return;
+    }
+
+    inp.dataset.original = String(val);
+    showToast('Saved');
+    await renderPriceHistory();
   });
 
-  await renderPriceHistory();
+  listenersBound = true;
 }
 
 async function renderPriceHistory(): Promise<void> {

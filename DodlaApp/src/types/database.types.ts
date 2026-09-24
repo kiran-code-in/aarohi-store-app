@@ -70,6 +70,20 @@ export interface InventoryTransaction {
   created_at: string | null;
   sale_type: SaleType;
   customer_id: string | null; // uuid FK to customers
+  /**
+   * Price per unit AT THE TIME OF SALE, stamped by a DB trigger on insert.
+   * NULL for received/damaged rows.
+   *
+   * Always compute historical money from this — never from the current
+   * products.* price. Re-multiplying past quantities by today's price is
+   * what caused price edits to retroactively rewrite past sales and every
+   * customer's balance.
+   */
+  unit_price: number | null;
+  /** Purchase price per unit at transaction time (profit + damage loss). */
+  unit_cost: number | null;
+  /** TRUE when the backfill had to infer the price (no record at that date). */
+  price_estimated: boolean;
 }
 
 export type NoteType = 'payment' | 'balance' | 'note';
@@ -127,6 +141,13 @@ export interface InventoryTransactionInsert {
   transaction_date: string; // 'YYYY-MM-DD'
   sale_type?: SaleType;
   customer_id?: string | null;
+  /**
+   * Optional. Omit it and the DB trigger stamps the product's current price,
+   * which is what every normal entry wants. Supply it only to record a sale
+   * at a known historical price (backdated entry, corrections).
+   */
+  unit_price?: number | null;
+  unit_cost?: number | null;
 }
 
 export interface CustomerNoteInsert {
@@ -141,9 +162,11 @@ export interface CustomerNoteInsert {
 export interface CustomerBalance {
   customer_id: string;
   customer_name: string;
-  total_purchases: number;   // sum of all wholesale sales
+  total_purchases: number;   // sum of wholesale sales at their SNAPSHOTTED prices
   total_paid: number;        // sum of payments
   balance: number;           // purchases - paid
+  /** TRUE if any purchase in this balance used a backfill-inferred price. */
+  has_estimated_prices?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -188,7 +211,20 @@ export interface DailyProductSummary {
   sold: number;           // total sold (retail + wholesale) on this date
   sold_retail: number;    // units sold at retail price
   sold_wholesale: number; // units sold at wholesale price
+  damaged: number;        // damaged on this date (reported only — NOT deducted from available)
   available: number;      // opening + received - sold (floored at 0)
+
+  // ── Money, computed from the price snapshotted on each transaction ──
+  // Use these for any historical figure. Multiplying sold_* by the *_price
+  // fields below re-prices the past every time a price is edited.
+  revenue_retail: number;
+  revenue_wholesale: number;
+  revenue: number;          // revenue_retail + revenue_wholesale
+  cost_of_goods: number;    // sold units x unit_cost at sale time
+  damaged_loss: number;     // damaged units x unit_cost
+  price_estimated: boolean; // any of this day's rows used an inferred price
+
+  // ── CURRENT prices — for display and new entries ONLY ──
   purchase_price: number;
   retail_price: number;
   wholesale_price: number;
@@ -200,6 +236,9 @@ export interface DailySummary {
   total_revenue: number;
   total_cost: number;
   total_profit: number;
+  total_damaged_loss: number;
+  /** TRUE if any row contributing to these totals used an inferred price. */
+  price_estimated: boolean;
   products: DailyProductSummary[];
 }
 

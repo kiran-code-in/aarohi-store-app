@@ -79,8 +79,11 @@ class CustomerNotesService extends BaseService {
         t.customer_id === customerId && t.transaction_type === 'sold' && t.sale_type === 'wholesale');
       let purchases = 0;
       for (const t of txns) {
+        // Use the price snapshotted on the row. Falling back to the product's
+        // current price is only for pre-snapshot demo rows — doing it for live
+        // data is what made a price edit rewrite every past balance.
         const p = DEMO_PRODUCTS.find(x => x.id === t.product_id);
-        purchases += t.quantity * (p?.wholesale_price ?? 0);
+        purchases += t.quantity * (t.unit_price ?? p?.wholesale_price ?? 0);
       }
       const notes = loadDemoNotes().filter(n => n.customer_id === customerId);
       let paid = 0, opening = 0;
@@ -101,7 +104,7 @@ class CustomerNotesService extends BaseService {
     return this.execute<CustomerBalance>(async () => {
       const { data, error } = await supabase
         .from('customer_balances')
-        .select('customer_id, customer_name, total_purchases, total_paid, balance')
+        .select('customer_id, customer_name, total_purchases, total_paid, balance, has_estimated_prices')
         .eq('customer_id', customerId)
         .single();
       if (error) throw error;
@@ -112,6 +115,7 @@ class CustomerNotesService extends BaseService {
         total_purchases: Number(data.total_purchases) || 0,
         total_paid: Number(data.total_paid) || 0,
         balance: Number(data.balance) || 0,
+        has_estimated_prices: Boolean(data.has_estimated_prices),
       };
     }, 'getBalance');
   }
@@ -128,7 +132,7 @@ class CustomerNotesService extends BaseService {
         let purchases = 0;
         for (const t of txns) {
           const p = DEMO_PRODUCTS.find(x => x.id === t.product_id);
-          purchases += t.quantity * (p?.wholesale_price ?? 0);
+          purchases += t.quantity * (t.unit_price ?? p?.wholesale_price ?? 0);
         }
         const notes = loadDemoNotes().filter(n => n.customer_id === c.id);
         let paid = 0, opening = 0;
@@ -152,7 +156,7 @@ class CustomerNotesService extends BaseService {
     return this.execute<CustomerBalance[]>(async () => {
       const { data, error } = await supabase
         .from('customer_balances')
-        .select('customer_id, customer_name, total_purchases, total_paid, balance')
+        .select('customer_id, customer_name, total_purchases, total_paid, balance, has_estimated_prices')
         .order('balance', { ascending: false });
       if (error) throw error;
 
@@ -163,6 +167,7 @@ class CustomerNotesService extends BaseService {
           total_purchases: Number(b.total_purchases) || 0,
           total_paid: Number(b.total_paid) || 0,
           balance: Number(b.balance) || 0,
+          has_estimated_prices: Boolean(b.has_estimated_prices),
         }))
         .filter(b => b.total_purchases !== 0 || b.total_paid !== 0);
     }, 'getAllBalances');

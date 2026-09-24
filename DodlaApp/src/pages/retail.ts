@@ -99,14 +99,20 @@ async function renderProducts(): Promise<void> {
     summaryRes.data.forEach(s => availMap.set(s.product_id, s.available));
   }
 
-  // Retail sold today (what's already in each input)
+  // Retail sold today (what's already in each input), with the price each row
+  // was recorded at so a past date shows what was actually charged.
   const txRes = await inventoryService.getDailyTransactions(date);
-  const soldMap = new Map<number, number>();
+  const soldMap = new Map<number, { qty: number; unitPrice: number | null }>();
   if (txRes.data) {
     txRes.data
       .filter(tx => tx.transaction_type === 'sold' && tx.sale_type === 'retail')
       .forEach(tx => {
-        if (tx.product_id) soldMap.set(tx.product_id, (soldMap.get(tx.product_id) || 0) + tx.quantity);
+        if (!tx.product_id) return;
+        const prev = soldMap.get(tx.product_id);
+        soldMap.set(tx.product_id, {
+          qty: (prev?.qty ?? 0) + tx.quantity,
+          unitPrice: tx.unit_price ?? prev?.unitPrice ?? null,
+        });
       });
   }
 
@@ -130,8 +136,11 @@ async function renderProducts(): Promise<void> {
       list.appendChild(header);
     }
 
-    const sold = soldMap.get(p.id) || 0;
-    const price = priceMap.get(p.id) || 0;
+    const entry = soldMap.get(p.id);
+    const sold = entry?.qty ?? 0;
+    // Recorded rows show the price they were billed at; empty rows show the
+    // current price, which is what a new entry will be recorded at.
+    const price = entry?.unitPrice ?? priceMap.get(p.id) ?? 0;
     const avail = availMap.get(p.id) ?? 0;
     const stockColor = avail <= 0 ? '#DC2626' : avail <= 3 ? '#D97706' : '#0F766E';
 
