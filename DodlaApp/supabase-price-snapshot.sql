@@ -84,13 +84,16 @@ BEGIN
   ORDER BY pp.effective_date DESC, pp.created_at DESC
   LIMIT 1;
 
-  -- No price record covering that date (e.g. a product never re-priced):
-  -- fall back to the product's current price.
-  IF NOT FOUND THEN
-    SELECT retail_price, wholesale_price, purchase_price
-      INTO p_retail, p_wholesale, p_purchase
-    FROM products WHERE id = NEW.product_id;
-  END IF;
+  -- Fill any gap from the product's current price. This covers both "no price
+  -- record for that date" and "the record exists but stores 0 for this price",
+  -- which happens for a product whose wholesale price had not been set yet when
+  -- the baseline snapshot was taken. Treating a stored 0 as a real price is a
+  -- silent way to lose money: it values a sale at nothing.
+  SELECT COALESCE(NULLIF(p_retail,    0), p.retail_price),
+         COALESCE(NULLIF(p_wholesale, 0), p.wholesale_price),
+         COALESCE(NULLIF(p_purchase,  0), p.purchase_price)
+    INTO p_retail, p_wholesale, p_purchase
+  FROM products p WHERE p.id = NEW.product_id;
 
   -- unit_price: only meaningful for sales. An explicitly supplied value wins
   -- (backdated entry / corrections can pass the historical price).
@@ -150,7 +153,12 @@ WITH resolved AS (
     p.purchase_price      AS cur_purchase
   FROM inventory_transactions it
   JOIN products p ON p.id = it.product_id
-  -- (a) newest price effective on or before the transaction date.
+  -- (a) newest price effective on or before the transaction date that actually
+  -- HAS a price for this sale type. A record storing 0 is skipped, not taken as
+  -- a real price of zero — products acquire a wholesale price later than a
+  -- retail one, so the baseline snapshot holds 0s that would otherwise value a
+  -- sale at nothing.
+  --
   -- created_at DESC breaks ties because updatePrice() stamps every edit with
   -- effective_date = CURRENT_DATE, so one day can hold several rows; the last
   -- one written is the price that actually stood at end of day.
@@ -158,13 +166,17 @@ WITH resolved AS (
     SELECT pp.* FROM product_prices pp
     WHERE pp.product_id = it.product_id
       AND pp.effective_date <= it.transaction_date
+      AND COALESCE(CASE WHEN it.sale_type = 'wholesale' THEN pp.wholesale_price
+                        ELSE pp.retail_price END, 0) > 0
     ORDER BY pp.effective_date DESC, pp.created_at DESC
     LIMIT 1
   ) eff ON TRUE
-  -- (b) earliest price ever recorded for this product
+  -- (b) earliest priced record for this product, extended backwards
   LEFT JOIN LATERAL (
     SELECT pp.* FROM product_prices pp
     WHERE pp.product_id = it.product_id
+      AND COALESCE(CASE WHEN it.sale_type = 'wholesale' THEN pp.wholesale_price
+                        ELSE pp.retail_price END, 0) > 0
     ORDER BY pp.effective_date ASC, pp.created_at ASC
     LIMIT 1
   ) fb ON TRUE
@@ -175,10 +187,13 @@ UPDATE inventory_transactions t
 SET unit_price = CASE
       WHEN r.transaction_type <> 'sold' THEN NULL
       WHEN r.sale_type = 'wholesale'
-        THEN COALESCE(r.eff_wholesale, r.fb_wholesale, r.cur_wholesale, 0)
-      ELSE COALESCE(r.eff_retail, r.fb_retail, r.cur_retail, 0)
+        THEN COALESCE(NULLIF(r.eff_wholesale, 0), NULLIF(r.fb_wholesale, 0),
+                      NULLIF(r.cur_wholesale, 0), 0)
+      ELSE COALESCE(NULLIF(r.eff_retail, 0), NULLIF(r.fb_retail, 0),
+                    NULLIF(r.cur_retail, 0), 0)
     END,
-    unit_cost = COALESCE(r.eff_purchase, r.fb_purchase, r.cur_purchase, 0),
+    unit_cost = COALESCE(NULLIF(r.eff_purchase, 0), NULLIF(r.fb_purchase, 0),
+                         NULLIF(r.cur_purchase, 0), 0),
     price_estimated = (r.eff_id IS NULL)
 FROM resolved r
 WHERE t.id = r.id;
