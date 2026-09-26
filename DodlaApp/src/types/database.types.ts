@@ -7,7 +7,7 @@
 //  ENUMS
 // ═══════════════════════════════════════════════════════════════
 
-export type TransactionType = 'received' | 'sold' | 'damaged';
+export type TransactionType = 'received' | 'sold' | 'damaged' | 'personal';
 
 export type SaleType = 'wholesale' | 'retail' | null;
 
@@ -211,8 +211,9 @@ export interface DailyProductSummary {
   sold: number;           // total sold (retail + wholesale) on this date
   sold_retail: number;    // units sold at retail price
   sold_wholesale: number; // units sold at wholesale price
-  damaged: number;        // damaged on this date (reported only — NOT deducted from available)
-  available: number;      // opening + received - sold (floored at 0)
+  damaged: number;        // damaged on this date (deducted from available)
+  personal: number;       // home-use units on this date (deducted from available)
+  available: number;      // opening + received - sold - damaged - personal (floored at 0)
 
   // ── Money, computed from the price snapshotted on each transaction ──
   // Use these for any historical figure. Multiplying sold_* by the *_price
@@ -222,6 +223,7 @@ export interface DailyProductSummary {
   revenue: number;          // revenue_retail + revenue_wholesale
   cost_of_goods: number;    // sold units x unit_cost at sale time
   damaged_loss: number;     // damaged units x unit_cost
+  personal_cost: number;    // home-use units x unit_cost (excluded from revenue/profit)
   price_estimated: boolean; // any of this day's rows used an inferred price
 
   // ── CURRENT prices — for display and new entries ONLY ──
@@ -237,6 +239,7 @@ export interface DailySummary {
   total_cost: number;
   total_profit: number;
   total_damaged_loss: number;
+  total_personal_cost: number;   // value of items taken home (excluded from profit)
   /** TRUE if any row contributing to these totals used an inferred price. */
   price_estimated: boolean;
   products: DailyProductSummary[];

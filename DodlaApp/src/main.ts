@@ -4,7 +4,6 @@
 
 import './styles/app.css';
 import { onConnectivityChange } from './lib/supabase';
-import { isDemoMode } from './lib/demo-data';
 import { isSignedIn, signIn, signOut, onAuthChange } from './lib/auth';
 import { AppState, formatCurrency } from './lib/state';
 import { renderHeader, initHeaderNav } from './components/header';
@@ -16,9 +15,10 @@ import { initScan, initScanEvents, stopCamera } from './pages/scan';
 import { renderHistory } from './pages/history';
 import { renderPrices } from './pages/prices';
 import { renderAdvances } from './pages/advances';
+import { renderHomeUse } from './pages/homeuse';
 import { inventoryService, customerNotesService, advanceOrderService } from './services';
 
-type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices' | 'advances' | 'more';
+type PageId = 'home' | 'stock' | 'sales' | 'wholesale' | 'scan' | 'history' | 'prices' | 'advances' | 'more' | 'homeuse';
 
 function navigateTo(page: PageId): void {
   document.querySelectorAll<HTMLElement>('.page').forEach(p => p.classList.remove('active'));
@@ -32,8 +32,8 @@ function navigateTo(page: PageId): void {
   const navMap: Record<string, string> = {
     home: 'home', stock: 'stock', sales: 'sales', wholesale: 'wholesale',
     scan: 'stock',
-    // Reports, Prices, Advances live under the "More" menu
-    more: 'more', history: 'more', prices: 'more', advances: 'more',
+    // Reports, Prices, Advances, Home Use live under the "More" menu
+    more: 'more', history: 'more', prices: 'more', advances: 'more', homeuse: 'more',
   };
   const navTarget = navMap[page] || 'home';
   document.querySelectorAll<HTMLElement>('.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -50,6 +50,7 @@ function navigateTo(page: PageId): void {
     case 'history': renderHistory(); break;
     case 'prices': renderPrices(); break;
     case 'advances': renderAdvances(); break;
+    case 'homeuse': renderHomeUse(); break;
     case 'more': break; // static menu page
   }
   if (page !== 'scan') stopCamera();
@@ -64,6 +65,18 @@ async function renderDashboard(): Promise<void> {
   set('dashProfit', formatCurrency(s.total_profit));
   set('dashSold', String(s.products.reduce((a, p) => a + p.sold, 0)));
   set('dashStock', String(s.products.reduce((a, p) => a + p.available, 0)));
+
+  // Damaged loss + home use — shown only when non-zero (excluded from profit)
+  const extras = document.getElementById('dashExtras');
+  if (extras) {
+    const dmgUnits = s.products.reduce((a, p) => a + p.damaged, 0);
+    const homeUnits = s.products.reduce((a, p) => a + p.personal, 0);
+    const parts: string[] = [];
+    if (dmgUnits > 0) parts.push(`<span>⚠ Damaged: <b style="color:#DC2626">${dmgUnits}</b> (${formatCurrency(s.total_damaged_loss)})</span>`);
+    if (homeUnits > 0) parts.push(`<span>🏠 Home use: <b style="color:#0F172A">${homeUnits}</b> (${formatCurrency(s.total_personal_cost)})</span>`);
+    extras.innerHTML = parts.join('');
+    extras.style.display = parts.length ? 'flex' : 'none';
+  }
 
   // Today's top sellers
   const salesDiv = document.getElementById('dashTodaySales');
@@ -155,16 +168,6 @@ let appStarted = false;
 async function startApp(): Promise<void> {
   if (appStarted) return;      // wire everything only once
   appStarted = true;
-
-  // Demo mode banner
-  if (isDemoMode()) {
-    const banner = document.createElement('div');
-    banner.textContent = '🧪 DEMO MODE — test data only, not saved to database';
-    banner.style.cssText = 'background:#F59E0B;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:5px;position:fixed;top:0;left:0;right:0;z-index:999';
-    document.body.appendChild(banner);
-    const header = document.querySelector('.app-header') as HTMLElement;
-    if (header) header.style.marginTop = '24px';
-  }
 
   renderHeader();
   initHeaderNav(() => navigateTo('home'));
@@ -270,8 +273,7 @@ async function boot(): Promise<void> {
     if (!signedIn) showLogin();
   });
 
-  // Demo mode bypasses auth entirely (local test data only)
-  if (isDemoMode() || (await isSignedIn())) {
+  if (await isSignedIn()) {
     await showApp();
   } else {
     showLogin();

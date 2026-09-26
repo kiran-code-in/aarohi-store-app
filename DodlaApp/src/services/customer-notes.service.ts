@@ -5,11 +5,7 @@
 
 import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
-import { ServiceResult, success } from '@/lib/error-handler';
-import {
-  isDemoMode, DEMO_CUSTOMERS, DEMO_PRODUCTS,
-  loadDemoTxns, loadDemoNotes, saveDemoNotes, nextNoteId,
-} from '@/lib/demo-data';
+import { ServiceResult } from '@/lib/error-handler';
 import type { CustomerNote, CustomerNoteInsert, CustomerBalance } from '@/types/database.types';
 
 class CustomerNotesService extends BaseService {
@@ -22,17 +18,6 @@ class CustomerNotesService extends BaseService {
       note_date: note.note_date || new Date().toISOString().split('T')[0],
       amount: note.amount ?? 0,
     };
-    if (isDemoMode()) {
-      const notes = loadDemoNotes();
-      const newNote: CustomerNote = {
-        id: nextNoteId(), customer_id: note.customer_id, note_type: note.note_type,
-        amount: payload.amount, note: note.note ?? null, note_date: payload.note_date,
-        created_at: new Date().toISOString(),
-      };
-      notes.unshift(newNote);
-      saveDemoNotes(notes);
-      return success(newNote);
-    }
     return this.query<CustomerNote>(
       () => supabase
         .from('customer_notes')
@@ -45,9 +30,6 @@ class CustomerNotesService extends BaseService {
 
   /** Get all notes for a customer, newest first */
   async getNotes(customerId: string): Promise<ServiceResult<CustomerNote[]>> {
-    if (isDemoMode()) {
-      return success(loadDemoNotes().filter(n => n.customer_id === customerId));
-    }
     return this.query<CustomerNote[]>(
       () => supabase
         .from('customer_notes')
@@ -73,32 +55,6 @@ class CustomerNotesService extends BaseService {
    * Balance = total wholesale purchases − total payments.
    */
   async getBalance(customerId: string): Promise<ServiceResult<CustomerBalance>> {
-    if (isDemoMode()) {
-      const cust = DEMO_CUSTOMERS.find(c => c.id === customerId);
-      const txns = loadDemoTxns().filter(t =>
-        t.customer_id === customerId && t.transaction_type === 'sold' && t.sale_type === 'wholesale');
-      let purchases = 0;
-      for (const t of txns) {
-        // Use the price snapshotted on the row. Falling back to the product's
-        // current price is only for pre-snapshot demo rows — doing it for live
-        // data is what made a price edit rewrite every past balance.
-        const p = DEMO_PRODUCTS.find(x => x.id === t.product_id);
-        purchases += t.quantity * (t.unit_price ?? p?.wholesale_price ?? 0);
-      }
-      const notes = loadDemoNotes().filter(n => n.customer_id === customerId);
-      let paid = 0, opening = 0;
-      for (const n of notes) {
-        if (n.note_type === 'payment') paid += n.amount ?? 0;
-        else if (n.note_type === 'balance') opening += n.amount ?? 0;
-      }
-      return success({
-        customer_id: customerId,
-        customer_name: cust?.name ?? 'Unknown',
-        total_purchases: purchases + opening,
-        total_paid: paid,
-        balance: (purchases + opening) - paid,
-      });
-    }
     // Read the pre-aggregated balance from the DB view (avoids the 1000-row
     // cap that undercounted purchases for high-volume customers).
     return this.execute<CustomerBalance>(async () => {
@@ -125,31 +81,6 @@ class CustomerNotesService extends BaseService {
    * Returns list sorted by highest outstanding balance.
    */
   async getAllBalances(): Promise<ServiceResult<CustomerBalance[]>> {
-    if (isDemoMode()) {
-      const balances: CustomerBalance[] = DEMO_CUSTOMERS.map(c => {
-        const txns = loadDemoTxns().filter(t =>
-          t.customer_id === c.id && t.transaction_type === 'sold' && t.sale_type === 'wholesale');
-        let purchases = 0;
-        for (const t of txns) {
-          const p = DEMO_PRODUCTS.find(x => x.id === t.product_id);
-          purchases += t.quantity * (t.unit_price ?? p?.wholesale_price ?? 0);
-        }
-        const notes = loadDemoNotes().filter(n => n.customer_id === c.id);
-        let paid = 0, opening = 0;
-        for (const n of notes) {
-          if (n.note_type === 'payment') paid += n.amount ?? 0;
-          else if (n.note_type === 'balance') opening += n.amount ?? 0;
-        }
-        return {
-          customer_id: c.id, customer_name: c.name,
-          total_purchases: purchases + opening, total_paid: paid,
-          balance: (purchases + opening) - paid,
-        };
-      }).filter(b => b.total_purchases !== 0 || b.total_paid !== 0);
-      balances.sort((a, b) => b.balance - a.balance);
-      return success(balances);
-    }
-
     // Read pre-aggregated balances from the DB view. This avoids Supabase's
     // 1000-row cap that silently undercounted purchases when summing raw
     // transaction rows client-side.

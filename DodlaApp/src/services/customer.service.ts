@@ -4,8 +4,7 @@
 
 import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
-import { ServiceResult, success } from '@/lib/error-handler';
-import { isDemoMode, DEMO_CUSTOMERS } from '@/lib/demo-data';
+import { ServiceResult } from '@/lib/error-handler';
 import type { Customer, CustomerInsert, CustomerUpdate, CustomerType } from '@/types/database.types';
 
 class CustomerService extends BaseService {
@@ -13,7 +12,6 @@ class CustomerService extends BaseService {
 
   /** Fetch all customers ordered by name */
   async getAll(): Promise<ServiceResult<Customer[]>> {
-    if (isDemoMode()) return success([...DEMO_CUSTOMERS]);
     return this.query<Customer[]>(
       () => supabase
         .from('customers')
@@ -62,18 +60,6 @@ class CustomerService extends BaseService {
 
   /** Create a new customer */
   async create(customer: CustomerInsert): Promise<ServiceResult<Customer>> {
-    if (isDemoMode()) {
-      const newCust: Customer = {
-        id: 'demo-' + Date.now(),
-        name: customer.name,
-        phone: customer.phone ?? null,
-        address: customer.address ?? null,
-        customer_type: customer.customer_type ?? 'wholesale',
-        created_at: null,
-      };
-      DEMO_CUSTOMERS.push(newCust);
-      return success(newCust);
-    }
     return this.query<Customer>(
       () => supabase
         .from('customers')

@@ -4,8 +4,7 @@
 
 import { BaseService } from '@/lib/base-service';
 import { supabase } from '@/lib/supabase';
-import { ServiceResult, success } from '@/lib/error-handler';
-import { isDemoMode, DEMO_CATEGORIES } from '@/lib/demo-data';
+import { ServiceResult } from '@/lib/error-handler';
 import type { Category, CategoryInsert } from '@/types/database.types';
 
 class CategoryService extends BaseService {
@@ -13,7 +12,6 @@ class CategoryService extends BaseService {
 
   /** Fetch all categories ordered by name */
   async getAll(): Promise<ServiceResult<Category[]>> {
-    if (isDemoMode()) return success([...DEMO_CATEGORIES]);
     return this.query<Category[]>(
       () => supabase
         .from('categories')
